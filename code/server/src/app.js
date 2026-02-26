@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const placeRoutes = require('./routes/placeRoutes');
 require('dotenv').config();
 
 //1. IMPORT the ROUTES
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 
 // Connect the System module (Status, Database Health)
 app.use('/api/system', systemRoutes);
+app.use('/api/places', placeRoutes);
 
 /**
  * LEGACY/HEARTBEAT ROUTE
@@ -52,3 +54,4 @@ app.listen(PORT, () => {
     console.log(` SYSTEM STATUS: http://localhost:${PORT}/api/system/status`);
     console.log(`=========================================`);
 });
+
