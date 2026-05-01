@@ -46,7 +46,33 @@ async function getGuideById(req, res) {
     }
 }
 
+/**
+ * GET /api/guides/suggest/:itineraryId
+ * Suggest suitable guides based on itinerary places
+ */
+async function suggestGuidesForItinerary(req, res) {
+    try {
+        const { itineraryId } = req.params;
+        
+        if (!itineraryId) {
+            return res.status(400).json({ error: 'itineraryId is required' });
+        }
+
+        const suggestedGuides = await userRepo.suggestGuidesForItinerary(itineraryId);
+        
+        res.status(200).json({
+            success: true,
+            message: `Found ${suggestedGuides.length} suitable guides for this itinerary`,
+            guides: suggestedGuides
+        });
+    } catch (error) {
+        console.error('Error suggesting guides:', error);
+        res.status(500).json({ error: 'Failed to suggest guides for itinerary' });
+    }
+}
+
 module.exports = {
     getAllGuides,
-    getGuideById
+    getGuideById,
+    suggestGuidesForItinerary
 };

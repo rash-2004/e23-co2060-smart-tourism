@@ -10,6 +10,7 @@ const userRoutes = require('./routes/userRoutes');
 const itinerariesRoutes = require('./routes/itinerariesRoutes');
 const guideRoutes = require('./routes/guideRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const { runMigrations } = require('./database/runMigrations');
 
 const app = express();
 
@@ -46,6 +47,24 @@ app.use('/api/itineraries', itinerariesRoutes);
 app.use('/api/guides', guideRoutes);
 app.use('/api/bookings', bookingRoutes);
 
+async function startServer() {
+    try {
+        await runMigrations();
+        console.log('Database migrations completed. Starting server...');
+
+        app.listen(PORT, () => {
+            console.log(`=========================================`);
+            console.log(` SERVER RUNNING ON: http://localhost:${PORT}`);
+            console.log(` AUTH ENDPOINT: http://localhost:${PORT}/api/auth/register`);
+            console.log(` SYSTEM STATUS: http://localhost:${PORT}/api/system/status`);
+            console.log(`=========================================`);
+        });
+    } catch (error) {
+        console.error('Failed to run migrations at startup:', error);
+        process.exit(1);
+    }
+}
+
 /**
  * LEGACY/HEARTBEAT ROUTE
  * Kept for quick browser verification.
@@ -63,10 +82,4 @@ app.get('/api/status', (req, res) => {
 // Start logic: Uses the PORT from .env or defaults to 5000.
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`=========================================`);
-    console.log(` SERVER RUNNING ON: http://localhost:${PORT}`);
-    console.log(` AUTH ENDPOINT: http://localhost:${PORT}/api/auth/register`);
-    console.log(` SYSTEM STATUS: http://localhost:${PORT}/api/system/status`);
-    console.log(`=========================================`);
-});
+startServer();

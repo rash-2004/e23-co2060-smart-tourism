@@ -10,6 +10,9 @@ const guideController = require('../controllers/guideController');
 // Get all guides
 router.get('/', guideController.getAllGuides);
 
+// Suggest guides for itinerary
+router.get('/suggest/:itineraryId', guideController.suggestGuidesForItinerary);
+
 // Get guide by ID
 router.get('/:id', guideController.getGuideById);
 

@@ -15,6 +15,7 @@ const RegisterPage = () => {
     covered_locations: ''
   });
   const [places, setPlaces] = useState([]);
+  const [placeSearchTerm, setPlaceSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchPlaces = async () => {
@@ -27,6 +28,12 @@ const RegisterPage = () => {
     };
     fetchPlaces();
   }, []);
+
+  const filteredPlaces = places.filter(place =>
+    place.name.toLowerCase().includes(placeSearchTerm.toLowerCase()) ||
+    (place.category || '').toLowerCase().includes(placeSearchTerm.toLowerCase())
+  );
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register, login } = useAuth();
@@ -137,6 +144,20 @@ const RegisterPage = () => {
           {formData.role === 'guide' && (
             <div className="form-group">
               <label>Locations I can Guide (Multiple)</label>
+              <input
+                type="text"
+                value={placeSearchTerm}
+                onChange={(e) => setPlaceSearchTerm(e.target.value)}
+                placeholder="Search places by name or category..."
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  marginBottom: '12px',
+                  fontSize: '0.95rem'
+                }}
+              />
               <div className="location-checkbox-grid" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
@@ -148,7 +169,7 @@ const RegisterPage = () => {
                 maxHeight: '200px',
                 overflowY: 'auto'
               }}>
-                {places.map(place => (
+                {filteredPlaces.length > 0 ? filteredPlaces.map(place => (
                   <label key={place.id} style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -163,7 +184,11 @@ const RegisterPage = () => {
                     />
                     {place.name}
                   </label>
-                ))}
+                )) : (
+                  <div style={{ color: '#666', fontSize: '0.9rem' }}>
+                    No matching places found.
+                  </div>
+                )}
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"

@@ -1,8 +1,13 @@
 -- 001_create_users.sql
 
-CREATE TYPE user_role AS ENUM ('tourist', 'guide', 'admin');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('tourist', 'guide', 'admin');
+    END IF;
+END$$;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,

@@ -450,8 +450,324 @@
     grid-template-columns: 1fr;
   }
 }
-/* Existing styles remain... add these below */
+/* Guide Suggestions */
+.guide-suggestions {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e4f0;
+}
 
+.guide-suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.guide-suggestions-header h3 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.guides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.guide-card {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid #dee2e6;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.guide-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.guide-card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.guide-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #667eea;
+}
+
+.guide-info h4 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.guide-specialization {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: #667eea;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.experience {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.guide-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-bio {
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.guide-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ecf0f1;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #7f8c8d;
+  margin-bottom: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.stat-value.score {
+  color: #27ae60;
+  font-size: 0.95rem;
+}
+
+.matched-places {
+  background: #e8f5e8;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d4edda;
+}
+
+.match-label {
+  font-weight: 600;
+  color: #155724;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.matched-places-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.matched-place {
+  background: #d4edda;
+  color: #155724;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.guide-contact {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.guide-contact .btn {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.guide-contact .btn-outline {
+  background: transparent;
+  border: 1px solid #667eea;
+  color: #667eea;
+}
+
+.guide-contact .btn-outline:hover {
+  background: #667eea;
+  color: white;
+}
+
+.guide-contact .btn-primary {
+  background: #27ae60;
+  border: 1px solid #27ae60;
+  color: white;
+}
+
+.guide-contact .btn-primary:hover:not(:disabled) {
+  background: #219a52;
+  border-color: #219a52;
+}
+
+.booking-request-summary {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 20px;
+}
+
+.booking-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.booking-summary-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  color: #2c3e50;
+}
+
+.booking-summary-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.booking-cards {
+  display: grid;
+  gap: 14px;
+}
+
+.booking-card {
+  background: #f8fafc;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.booking-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.booking-card-title {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.booking-card-meta {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.booking-card-body p {
+  margin: 0 0 8px 0;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-quoted {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-accepted {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-cancelled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.booking-success {
+  color: #166534;
+  font-weight: 700;
+}
+
+.booking-error {
+  color: #991b1b;
+  font-weight: 700;
+}
+
+/* Map Styles */
 .map-preview-container {
   width: 100%;
   height: 300px;
@@ -459,7 +775,7 @@
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #ddd;
-  z-index: 1; /* Keeps map below dropdowns if any */
+  z-index: 1;
 }
 
 .itinerary-map {
@@ -485,7 +801,7 @@
   cursor: not-allowed;
 }
 
-/* Fix for Leaflet z-index issues with sticky headers or modals */
+/* Fix for Leaflet z-index issues */
 .leaflet-container {
   z-index: 1 !important;
 }
@@ -498,6 +814,98 @@
   padding: 16px 20px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+}
+
+.journey-summary__loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #667eea;
+  font-size: 0.95rem;
+}
+
+.journey-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.journey-summary__error {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.journey-summary__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.journey-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.journey-stat__icon {
+  font-size: 1.5rem;
+  width: 24px;
+  text-align: center;
+}
+
+.journey-stat__label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.journey-stat__value {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.journey-summary__disclaimer {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .guides-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .guide-card-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .guide-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .guide-contact {
+    flex-direction: column;
+  }
 }
 
 .journey-summary__loading {

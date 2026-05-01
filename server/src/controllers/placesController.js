@@ -84,7 +84,57 @@ async function getPlaceDetail(req, res) {
     }
 }
 
+async function getPlaceReviews(req, res) {
+    try {
+        const { id } = req.params;
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ success: false, error: 'Invalid place ID' });
+        }
+
+        const reviews = await placesRepo.getPlaceReviews(parseInt(id));
+        res.status(200).json({ success: true, reviews });
+    } catch (error) {
+        console.error('Error fetching place reviews:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch reviews' });
+    }
+}
+
+async function createPlaceReview(req, res) {
+    try {
+        const { id } = req.params;
+        const { tourist_id, rating, title, comment } = req.body;
+
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ success: false, error: 'Invalid place ID' });
+        }
+        if (!tourist_id || isNaN(tourist_id)) {
+            return res.status(400).json({ success: false, error: 'tourist_id is required' });
+        }
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
+        }
+        if (!title) {
+            return res.status(400).json({ success: false, error: 'Review title is required' });
+        }
+
+        const review = await placesRepo.createPlaceReview(
+            parseInt(id),
+            parseInt(tourist_id),
+            parseInt(rating),
+            title,
+            comment || ''
+        );
+
+        res.status(201).json({ success: true, review });
+    } catch (error) {
+        console.error('Error creating place review:', error);
+        res.status(500).json({ success: false, error: 'Failed to submit review' });
+    }
+}
+
 module.exports = {
     getPlaces,
-    getPlaceDetail
+    getPlaceDetail,
+    getPlaceReviews,
+    createPlaceReview
 };

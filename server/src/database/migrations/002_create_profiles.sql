@@ -1,4 +1,4 @@
-CREATE TABLE guide_profiles (
+CREATE TABLE IF NOT EXISTS guide_profiles (
     id SERIAL PRIMARY KEY,
     user_id INT UNIQUE NOT NULL, -- 1-to-1 relationship
     full_name VARCHAR(100) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE guide_profiles (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE tourist_profiles (
+CREATE TABLE IF NOT EXISTS tourist_profiles (
     id SERIAL PRIMARY KEY,
     user_id INT UNIQUE NOT NULL,
     full_name VARCHAR(100) NOT NULL,

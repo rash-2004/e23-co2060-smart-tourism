@@ -20,7 +20,9 @@ BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
 
 CREATE TRIGGER update_bookings_updated_at
     BEFORE UPDATE ON bookings

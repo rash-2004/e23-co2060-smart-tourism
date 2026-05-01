@@ -1,4 +1,4 @@
-CREATE TABLE places (
+CREATE TABLE IF NOT EXISTS places (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL UNIQUE,
     description TEXT,

@@ -17,6 +17,9 @@ const placesController = require('../controllers/placesController');
  */
 router.get('/', placesController.getPlaces);
 
+router.get('/:id/reviews', placesController.getPlaceReviews);
+router.post('/:id/reviews', placesController.createPlaceReview);
+
 /**
  * GET /api/places/:id
  * Fetch single place by ID

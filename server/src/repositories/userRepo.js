@@ -121,6 +121,89 @@ const getAllGuides = async () => {
     }
 };
 
+// Suggest guides based on itinerary places
+const suggestGuidesForItinerary = async (itineraryId) => {
+    try {
+        // First, get all places in the itinerary
+        const placesQuery = `
+            SELECT p.name, p.category
+            FROM itinerary_items ii
+            JOIN places p ON ii.place_id = p.id
+            WHERE ii.itinerary_id = $1
+            ORDER BY ii.visit_order
+        `;
+        const placesResult = await db.query(placesQuery, [itineraryId]);
+        const places = placesResult.rows;
+
+        if (places.length === 0) {
+            return [];
+        }
+
+        // Get place names for matching
+        const placeNames = places.map(p => p.name.toLowerCase());
+        const placeCategories = [...new Set(places.map(p => p.category))]; // Unique categories
+
+        // Find guides whose covered_locations match the places
+        const guidesQuery = `
+            SELECT gp.*, u.email,
+                   CASE WHEN gp.covered_locations IS NOT NULL THEN 1 ELSE 0 END as has_locations
+            FROM guide_profiles gp
+            JOIN users u ON gp.user_id = u.id
+            WHERE u.role = 'guide'
+        `;
+        const guidesResult = await db.query(guidesQuery);
+        const allGuides = guidesResult.rows;
+
+        // Filter and score guides based on location coverage
+        const scoredGuides = allGuides.map(guide => {
+            let score = 0;
+            let matchedPlaces = [];
+
+            if (guide.covered_locations) {
+                const coveredLocations = guide.covered_locations.toLowerCase().split(',').map(loc => loc.trim());
+
+                // Check for exact place name matches
+                placeNames.forEach(placeName => {
+                    if (coveredLocations.some(loc => loc.includes(placeName) || placeName.includes(loc))) {
+                        score += 10; // High score for direct place match
+                        matchedPlaces.push(placeName);
+                    }
+                });
+
+                // Check for category specialization match
+                if (guide.specialization && placeCategories.includes(guide.specialization)) {
+                    score += 5;
+                }
+
+                // Bonus for experience
+                if (guide.experience_years) {
+                    score += Math.min(guide.experience_years, 10); // Max 10 points for experience
+                }
+            }
+
+            // Guides without locations still get a low base score so they can be shown as a fallback
+            if (!guide.covered_locations) {
+                score += 1;
+            }
+
+            return {
+                ...guide,
+                match_score: score,
+                matched_places: matchedPlaces,
+                covered_locations_array: guide.covered_locations ? guide.covered_locations.split(',').map(loc => loc.trim()) : []
+            };
+        });
+
+        const suggestedGuides = scoredGuides
+          .sort((a, b) => b.match_score - a.match_score);
+
+        return suggestedGuides;
+    } catch (error) {
+        console.error('Error suggesting guides for itinerary:', error);
+        throw error;
+    }
+};
+
 // Find guides by covered locations
 const findGuidesByLocations = async (locationNames) => {
     try {
@@ -151,5 +234,6 @@ module.exports = {
     updateTouristProfile,
     updateGuideProfile,
     getAllGuides,
+    suggestGuidesForItinerary,
     findGuidesByLocations
 };

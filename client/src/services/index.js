@@ -26,6 +26,7 @@ export const placeService = {
 export const guideService = {
   getAllGuides: () => API.get('/api/guides'),
   getGuideById: (id) => API.get(`/api/guides/${id}`),
+  suggestGuidesForItinerary: (itineraryId) => API.get(`/api/guides/suggest/${itineraryId}`),
   createGuide: (data) => API.post('/api/guides', data),
   getGuidePortfolio: (guideId) => API.get(`/api/guides/${guideId}/portfolio`),
   rateGuide: (guideId, rating) => API.post(`/api/guides/${guideId}/rate`, { rating })
@@ -55,6 +56,9 @@ export const bookingService = {
   quotePrice: (bookingId, price) => API.put(`/api/bookings/${bookingId}/quote`, { price }),
   acceptQuote: (bookingId) => API.put(`/api/bookings/${bookingId}/accept`),
   rejectQuote: (bookingId) => API.put(`/api/bookings/${bookingId}/reject`),
+  cancelBooking: (bookingId, data = {}) => API.put(`/api/bookings/${bookingId}/cancel`, data),
+  getBookingMessages: (bookingId) => API.get(`/api/bookings/${bookingId}/messages`),
+  sendBookingMessage: (bookingId, data) => API.post(`/api/bookings/${bookingId}/messages`, data),
   getNotificationCount: (guideId) => API.get(`/api/bookings/guide/${guideId}/notifications`)
 };
 

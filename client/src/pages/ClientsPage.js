@@ -11,12 +11,28 @@ const ClientsPage = () => {
   const [success, setSuccess] = useState('');
   const [quotePrice, setQuotePrice] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingMessages, setBookingMessages] = useState({});
+  const [messageTextByBooking, setMessageTextByBooking] = useState({});
 
   useEffect(() => {
     if (user?.id) {
       fetchBookings();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (selectedBooking) {
+      fetchBookingMessages(selectedBooking.id);
+    }
+  }, [selectedBooking]);
+
+  useEffect(() => {
+    bookings.forEach((booking) => {
+      if (!bookingMessages[booking.id]) {
+        fetchBookingMessages(booking.id);
+      }
+    });
+  }, [bookings]);
 
   const fetchBookings = async () => {
     try {
@@ -44,11 +60,45 @@ const ClientsPage = () => {
       setSuccess('Quote sent successfully!');
       setSelectedBooking(null);
       setQuotePrice('');
+      setMessageText('');
       fetchBookings();
     } catch (err) {
       setError('Failed to send quote');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBookingMessages = async (bookingId) => {
+    try {
+      const response = await bookingService.getBookingMessages(bookingId);
+      setBookingMessages(prev => ({
+        ...prev,
+        [bookingId]: response.data.messages || []
+      }));
+    } catch (err) {
+      console.error('Failed to load booking messages:', err);
+    }
+  };
+
+  const handleSendMessage = async (bookingId) => {
+    const message = (messageTextByBooking[bookingId] || '').trim();
+    if (!message) return;
+
+    try {
+      await bookingService.sendBookingMessage(bookingId, {
+        authorId: user.id,
+        message
+      });
+      setMessageTextByBooking(prev => ({
+        ...prev,
+        [bookingId]: ''
+      }));
+      fetchBookingMessages(bookingId);
+      setSuccess('Message sent to the tourist');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      setError('Failed to send message');
     }
   };
 
@@ -102,6 +152,19 @@ const ClientsPage = () => {
                     <p><strong>Tourist:</strong> {booking.tourist_email}</p>
                     <p><strong>Dates:</strong> {booking.start_date} to {booking.end_date}</p>
                     {booking.notes && <p><em>"{booking.notes}"</em></p>}
+
+                    {booking.itinerary_places && booking.itinerary_places.length > 0 && (
+                      <div style={{ backgroundColor: '#f7f9fc', padding: '12px', borderRadius: '10px', margin: '12px 0' }}>
+                        <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>Trip plan</p>
+                        <ul style={{ margin: 0, paddingLeft: '18px', color: '#475569' }}>
+                          {booking.itinerary_places.map((place) => (
+                            <li key={place.place_id} style={{ marginBottom: '6px' }}>
+                              {place.visit_order}. {place.name} {place.category ? `(${place.category})` : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     
                     {booking.status === 'pending' && (
                       <button 
@@ -130,6 +193,41 @@ const ClientsPage = () => {
                         </div>
                       </div>
                     )}
+
+                    <div style={{ marginTop: '18px', padding: '16px', backgroundColor: '#f7f9fc', borderRadius: '10px' }}>
+                      <h4 style={{ margin: '0 0 10px 0' }}>Message Tourist</h4>
+                      <textarea
+                        rows={3}
+                        value={messageTextByBooking[booking.id] || ''}
+                        onChange={(e) => setMessageTextByBooking(prev => ({
+                          ...prev,
+                          [booking.id]: e.target.value
+                        }))}
+                        placeholder="Type a message to the tourist..."
+                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', marginBottom: '10px' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => handleSendMessage(booking.id)}
+                      >
+                        Send Message
+                      </button>
+
+                      {bookingMessages[booking.id]?.length > 0 && (
+                        <div style={{ marginTop: '16px' }}>
+                          <h5 style={{ margin: '0 0 10px 0' }}>Conversation</h5>
+                          {bookingMessages[booking.id].map(message => (
+                            <div key={message.id} style={{ marginBottom: '10px', padding: '12px', backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
+                              <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '6px' }}>
+                                <strong>{message.author_email === user.email ? 'You' : message.author_email || 'Tourist'}</strong> • {new Date(message.created_at).toLocaleString()}
+                              </div>
+                              <div style={{ color: '#111827' }}>{message.message}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -170,6 +268,33 @@ const ClientsPage = () => {
                     <button type="button" className="btn" style={{ flex: 1 }} onClick={() => setSelectedBooking(null)}>Cancel</button>
                   </div>
                 </form>
+                <div style={{ marginTop: '18px' }}>
+                  <h4 style={{ marginBottom: '10px' }}>Message the Tourist</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <textarea
+                      rows={3}
+                      value={messageTextByBooking[selectedBooking?.id] || ''}
+                      onChange={(e) => setMessageTextByBooking(prev => ({
+                        ...prev,
+                        [selectedBooking.id]: e.target.value
+                      }))}
+                      placeholder="Write a quick update or ask a question..."
+                      style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db' }}
+                    />
+                    <button type="button" className="btn btn-secondary" onClick={() => handleSendMessage(selectedBooking.id)}>Send Message</button>
+                  </div>
+                  {bookingMessages[selectedBooking?.id]?.length > 0 && (
+                    <div style={{ marginTop: '18px', maxHeight: '220px', overflowY: 'auto', borderTop: '1px solid #e5e7eb', paddingTop: '12px' }}>
+                      <h5 style={{ margin: '0 0 10px 0' }}>Message History</h5>
+                      {bookingMessages[selectedBooking.id].map(message => (
+                        <div key={message.id} style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '4px' }}><strong>{message.author_email || 'User'}</strong> • {new Date(message.created_at).toLocaleString()}</div>
+                          <div style={{ color: '#111827' }}>{message.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

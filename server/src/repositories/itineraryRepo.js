@@ -134,6 +134,15 @@ async function deleteItinerary(itineraryId) {
 
 async function addPlaceToItinerary(itineraryId, placeId, visitOrder, notes) {
     try {
+        const existingItem = await db.query(
+            `SELECT * FROM itinerary_items WHERE itinerary_id = $1 AND place_id = $2`,
+            [itineraryId, placeId]
+        );
+
+        if (existingItem.rows.length > 0) {
+            return { ...existingItem.rows[0], already_exists: true };
+        }
+
         // If visit_order not provided, get the max and add 1
         if (!visitOrder) {
             const maxOrder = await db.query(

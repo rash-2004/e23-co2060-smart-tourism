@@ -20,10 +20,66 @@ async function createBooking(itineraryId, guideId, touristId, notes) {
     }
 }
 
+async function getBookingById(bookingId) {
+    try {
+        const result = await db.query(
+            `SELECT * FROM bookings WHERE id = $1`,
+            [bookingId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error fetching booking by ID:', error);
+        throw error;
+    }
+}
+
+async function getBookingMessages(bookingId) {
+    try {
+        const result = await db.query(
+            `SELECT bm.id, bm.booking_id, bm.author_id, bm.message, bm.created_at, u.email as author_email
+             FROM booking_messages bm
+             LEFT JOIN users u ON bm.author_id = u.id
+             WHERE bm.booking_id = $1
+             ORDER BY bm.created_at ASC`,
+            [bookingId]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('Error fetching booking messages:', error);
+        throw error;
+    }
+}
+
+async function createBookingMessage(bookingId, authorId, message) {
+    try {
+        const result = await db.query(
+            `INSERT INTO booking_messages (booking_id, author_id, message)
+             VALUES ($1, $2, $3)
+             RETURNING *`,
+            [bookingId, authorId, message]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error creating booking message:', error);
+        throw error;
+    }
+}
+
 async function getGuideBookings(guideId) {
     try {
         const result = await db.query(
-            `SELECT b.*, i.title as itinerary_title, i.start_date, i.end_date, u.email as tourist_email, tp.full_name as tourist_name, tp.contact_number as tourist_contact
+            `SELECT b.*, i.title as itinerary_title, i.start_date, i.end_date,
+                    u.email as tourist_email, tp.full_name as tourist_name, tp.contact_number as tourist_contact,
+                    COALESCE(
+                        (SELECT json_agg(json_build_object(
+                            'place_id', p.id,
+                            'name', p.name,
+                            'category', p.category,
+                            'visit_order', ii.visit_order
+                        ) ORDER BY ii.visit_order)
+                         FROM itinerary_items ii
+                         JOIN places p ON ii.place_id = p.id
+                         WHERE ii.itinerary_id = i.id), '[]'::json) as itinerary_places
              FROM bookings b
              JOIN itineraries i ON b.itinerary_id = i.id
              JOIN users u ON b.tourist_id = u.id
@@ -93,6 +149,9 @@ async function getPendingGuideNotificationsCount(guideId) {
 
 module.exports = {
     createBooking,
+    getBookingById,
+    getBookingMessages,
+    createBookingMessage,
     getGuideBookings,
     getTouristBookings,
     updateBookingStatus,

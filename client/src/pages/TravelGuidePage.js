@@ -11,6 +11,7 @@ const TravelGuidePage = () => {
   const [filteredGuides, setFilteredGuides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [showPortfolio, setShowPortfolio] = useState(false);
   const [showContact, setShowContact] = useState(false);
@@ -33,10 +34,14 @@ const TravelGuidePage = () => {
 
   const handleBookingAction = async (bookingId, action) => {
     try {
+      setError('');
+      setSuccess('');
       if (action === 'accept') {
         await bookingService.acceptQuote(bookingId);
+        setSuccess('Quote accepted successfully. The tourist will be notified.');
       } else {
         await bookingService.rejectQuote(bookingId);
+        setSuccess('Quote rejected. The tourist will be notified.');
       }
       fetchBookings();
     } catch (err) {
@@ -100,6 +105,7 @@ const TravelGuidePage = () => {
         <SearchBar onSearch={handleSearch} placeholder="Search guides by name or specialization..." />
 
         {error && <div className="error">{error}</div>}
+        {success && <div className="success">{success}</div>}
 
         {user?.role === 'tourist' && bookings.length > 0 && (
           <section className="my-bookings-section" style={{ 

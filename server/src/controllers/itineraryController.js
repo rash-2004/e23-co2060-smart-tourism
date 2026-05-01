@@ -143,8 +143,6 @@ async function addPlaceToItinerary(req, res) {
         const { itinerary_id } = req.params;
         const { place_id, visit_order, notes } = req.body;
 
-        console.log('Add place request:', { itinerary_id, place_id, visit_order, notes });
-
         if (!place_id) {
             return res.status(400).json({ error: 'place_id is required' });
         }
@@ -156,11 +154,12 @@ async function addPlaceToItinerary(req, res) {
             notes
         );
 
-        console.log('Place added successfully:', item);
+        const statusCode = item.already_exists ? 200 : 201;
+        const message = item.already_exists ? 'Place already exists in itinerary' : 'Place added to itinerary';
 
-        res.status(201).json({
+        res.status(statusCode).json({
             success: true,
-            message: 'Place added to itinerary',
+            message,
             item
         });
     } catch (error) {

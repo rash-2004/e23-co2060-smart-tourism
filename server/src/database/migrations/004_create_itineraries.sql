@@ -1,4 +1,4 @@
-CREATE TABLE itineraries (
+CREATE TABLE IF NOT EXISTS itineraries (
     id SERIAL PRIMARY KEY,
     tourist_id INT NOT NULL,
     title VARCHAR(150) NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE itineraries (
     FOREIGN KEY (tourist_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE itinerary_items (
+CREATE TABLE IF NOT EXISTS itinerary_items (
     id SERIAL PRIMARY KEY,
     itinerary_id INT NOT NULL,
     place_id INT NOT NULL,

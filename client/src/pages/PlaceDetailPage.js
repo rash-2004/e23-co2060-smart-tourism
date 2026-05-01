@@ -9,7 +9,7 @@ import './PlaceDetailPage.css';
 const PlaceDetailPage = () => {
   const { id } = useParams();
   const { getPlaceById, loading: placesLoading } = usePlace();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [place, setPlace] = useState(null);
@@ -43,7 +43,10 @@ const PlaceDetailPage = () => {
     }
 
     try {
-      const response = await reviewService.createReview(id, formData);
+      const response = await reviewService.createReview(id, {
+        ...formData,
+        tourist_id: user?.id
+      });
       setReviews([...reviews, response.data.review]);
       return { success: true };
     } catch (error) {
