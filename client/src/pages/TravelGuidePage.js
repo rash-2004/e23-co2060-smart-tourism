@@ -15,6 +15,9 @@ const TravelGuidePage = () => {
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [showPortfolio, setShowPortfolio] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [bookingMessagesByBooking, setBookingMessagesByBooking] = useState({});
+  const [messageTextByBooking, setMessageTextByBooking] = useState({});
+  const [expandedBookingId, setExpandedBookingId] = useState(null);
 
   useEffect(() => {
     fetchGuides();
@@ -49,6 +52,32 @@ const TravelGuidePage = () => {
     }
   };
 
+  const handleDeleteBooking = async (bookingId) => {
+    try {
+      setError('');
+      setSuccess('');
+      await bookingService.deleteBooking(bookingId, { authorId: user.id });
+      setSuccess('Booking request deleted successfully.');
+      fetchBookings();
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+      setError(err.response?.data?.error || 'Failed to delete booking request.');
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      setError('');
+      setSuccess('');
+      await bookingService.cancelBooking(bookingId, { authorId: user.id });
+      setSuccess('Booking request cancelled successfully.');
+      fetchBookings();
+    } catch (err) {
+      console.error('Error cancelling booking:', err);
+      setError(err.response?.data?.error || 'Failed to cancel booking request.');
+    }
+  };
+
   const fetchGuides = async () => {
     try {
       setLoading(true);
@@ -62,6 +91,41 @@ const TravelGuidePage = () => {
       console.error('Error fetching guides:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBookingMessagesForId = async (bookingId) => {
+    try {
+      const response = await bookingService.getBookingMessages(bookingId);
+      setBookingMessagesByBooking(prev => ({
+        ...prev,
+        [bookingId]: response.data.messages || []
+      }));
+    } catch (err) {
+      console.error('Error loading booking messages:', err);
+    }
+  };
+
+  const handleSendBookingMessage = async (bookingId) => {
+    const message = messageTextByBooking[bookingId] || '';
+    if (!message.trim()) {
+      setError('Please enter a message before sending.');
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccess('');
+      await bookingService.sendBookingMessage(bookingId, {
+        authorId: user.id,
+        message: message.trim()
+      });
+      setMessageTextByBooking(prev => ({ ...prev, [bookingId]: '' }));
+      await fetchBookingMessagesForId(bookingId);
+      setSuccess('Message sent to your guide.');
+    } catch (err) {
+      console.error('Error sending booking message:', err);
+      setError(err.response?.data?.error || 'Failed to send message.');
     }
   };
 
@@ -93,6 +157,13 @@ const TravelGuidePage = () => {
     setShowContact(false);
     setSelectedGuide(null);
   };
+
+  useEffect(() => {
+    if (user?.role !== 'tourist') return;
+    bookings.forEach((booking) => {
+      fetchBookingMessagesForId(booking.id);
+    });
+  }, [bookings, user?.role]);
 
   return (
     <main className="travel-guide-page">
@@ -167,6 +238,80 @@ const TravelGuidePage = () => {
                       >
                         Decline
                       </button>
+                    </div>
+                  )}
+
+                  {booking.status === 'pending' && (
+                    <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                      <button
+                        className="btn btn-danger"
+                        style={{ flex: 1, padding: '5px', fontSize: '0.8rem' }}
+                        onClick={() => handleCancelBooking(booking.id)}
+                      >
+                        Cancel Request
+                      </button>
+                    </div>
+                  )}
+
+                  {(booking.status === 'cancelled' || booking.status === 'rejected') && (
+                    <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                      <button 
+                        className="btn btn-danger" 
+                        style={{ flex: 1, padding: '5px', fontSize: '0.8rem' }}
+                        onClick={() => handleDeleteBooking(booking.id)}
+                      >
+                        Delete Request
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '12px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ width: '100%', padding: '6px', fontSize: '0.8rem' }}
+                      onClick={() => setExpandedBookingId(prev => (prev === booking.id ? null : booking.id))}
+                    >
+                      {expandedBookingId === booking.id ? 'Hide Messages' : 'Message / Conversation'}
+                    </button>
+                  </div>
+
+                  {expandedBookingId === booking.id && (
+                    <div style={{ marginTop: '12px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px' }}>
+                      <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '0.85rem' }}>Message Your Guide</p>
+                      <textarea
+                        rows={3}
+                        value={messageTextByBooking[booking.id] || ''}
+                        onChange={(e) => setMessageTextByBooking(prev => ({
+                          ...prev,
+                          [booking.id]: e.target.value
+                        }))}
+                        placeholder="Ask for clarification, share a note, or confirm details..."
+                        style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: '6px', padding: '8px', fontSize: '0.82rem', marginBottom: '8px', resize: 'vertical' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleSendBookingMessage(booking.id)}
+                      >
+                        Send Message
+                      </button>
+
+                      {bookingMessagesByBooking[booking.id]?.length > 0 && (
+                        <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', border: '1px solid #dbeafe', borderRadius: '8px', padding: '8px', maxHeight: '160px', overflowY: 'auto' }}>
+                          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '0.82rem', color: '#334155' }}>Conversation</p>
+                          {bookingMessagesByBooking[booking.id].map((msg) => (
+                            <div key={msg.id} style={{ marginBottom: '8px' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '2px' }}>
+                                <strong>{msg.author_email === user.email ? 'You' : msg.author_email || 'Guide'}</strong> • {new Date(msg.created_at).toLocaleString()}
+                              </div>
+                              <div style={{ fontSize: '0.82rem', color: '#111827', whiteSpace: 'pre-wrap', lineHeight: 1.35 }}>
+                                {msg.message}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

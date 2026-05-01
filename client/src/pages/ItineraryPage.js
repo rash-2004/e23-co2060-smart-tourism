@@ -108,6 +108,7 @@ const ItineraryPage = () => {
   const [touristBookings, setTouristBookings] = useState([]);
   const [bookingMessagesByBooking, setBookingMessagesByBooking] = useState({});
   const [messageTextByBooking, setMessageTextByBooking] = useState({});
+  const [expandedBookingId, setExpandedBookingId] = useState(null);
 
   const loadPlaces = useCallback(async () => {
     try {
@@ -303,6 +304,18 @@ const ItineraryPage = () => {
     } catch (err) {
       console.error('Error cancelling booking:', err);
       setError('Failed to cancel booking request.');
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    try {
+      setError('');
+      await bookingService.deleteBooking(bookingId, { authorId: user.id });
+      setSuccess('Booking request deleted successfully.');
+      await fetchTouristBookings();
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+      setError(err.response?.data?.error || 'Failed to delete booking request.');
     }
   };
 
@@ -654,11 +667,11 @@ const ItineraryPage = () => {
                           </div>
                           <div className="booking-card-body">
                             {booking.quoted_price && (
-                              <p><strong>Quoted price:</strong> {booking.quoted_price}</p>
+                              <p className="booking-card-price"><strong>Quoted price:</strong> {booking.quoted_price}</p>
                             )}
-                            {booking.notes && <p><strong>Note:</strong> {booking.notes}</p>}
-                            {booking.status === 'pending' && <p>Waiting for the guide to reply.</p>}
-                            {booking.status === 'quoted' && <p>The guide sent a quote. Open Travel Guides to view or accept it.</p>}
+                            {booking.notes && <p className="booking-card-note"><strong>Note:</strong> {booking.notes}</p>}
+                            {booking.status === 'pending' && <p className="booking-card-info">Waiting for the guide to reply.</p>}
+                            {booking.status === 'quoted' && <p className="booking-card-info">The guide sent a quote. Open Travel Guides to view or accept it.</p>}
                             {booking.status === 'accepted' && (
                               <p className="booking-success">Booking confirmed! Contact the guide at <strong>{booking.guide_contact}</strong>.</p>
                             )}
@@ -666,46 +679,67 @@ const ItineraryPage = () => {
                               <p className="booking-error">This request was declined. Try another guide or place.</p>
                             )}
                             {booking.status === 'cancelled' && (
-                              <p className="booking-error">This request was cancelled by you.</p>
+                              <>
+                                <p className="booking-error">This request was cancelled by you.</p>
+                                <div className="booking-card-actions">
+                                  <button 
+                                    type="button"
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() => handleDeleteBooking(booking.id)}
+                                  >
+                                    Delete Request
+                                  </button>
+                                </div>
+                              </>
                             )}
                             {(booking.status === 'pending' || booking.status === 'quoted') && (
-                              <button 
-                                type="button"
-                                className="btn btn-danger btn-sm" 
-                                onClick={() => handleCancelBooking(booking.id)}
-                                style={{ marginTop: '10px' }}
-                              >
-                                Cancel Request
-                              </button>
+                              <div className="booking-card-actions">
+                                <button 
+                                  type="button"
+                                  className="btn btn-danger btn-sm"
+                                  onClick={() => handleCancelBooking(booking.id)}
+                                >
+                                  Cancel Request
+                                </button>
+                              </div>
                             )}
-                            <div style={{ marginTop: '18px' }}>
-                              <h4 style={{ marginBottom: '10px' }}>Message Your Guide</h4>
-                              <textarea
-                                rows={3}
-                                value={messageTextByBooking[booking.id] || ''}
-                                onChange={(e) => setMessageTextByBooking(prev => ({
-                                  ...prev,
-                                  [booking.id]: e.target.value
-                                }))}
-                                placeholder="Ask for clarification, share a note, or confirm details..."
-                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d1d5db', marginBottom: '10px' }}
-                              />
-                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleSendBookingMessage(booking.id)}>Send Message</button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm booking-expand-btn"
+                              onClick={() => setExpandedBookingId(prev => (prev === booking.id ? null : booking.id))}
+                            >
+                              {expandedBookingId === booking.id ? 'Hide Messages' : 'Message / Conversation'}
+                            </button>
+                            {expandedBookingId === booking.id && (
+                              <div className="booking-message-section">
+                                <h4>Message Your Guide</h4>
+                                <textarea
+                                  rows={3}
+                                  value={messageTextByBooking[booking.id] || ''}
+                                  onChange={(e) => setMessageTextByBooking(prev => ({
+                                    ...prev,
+                                    [booking.id]: e.target.value
+                                  }))}
+                                  placeholder="Ask for clarification, share a note, or confirm details..."
+                                  className="booking-message-textarea"
+                                />
+                                <button type="button" className="btn btn-secondary btn-sm booking-message-send" onClick={() => handleSendBookingMessage(booking.id)}>Send Message</button>
 
-                              {bookingMessagesByBooking[booking.id]?.length > 0 && (
-                                <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
-                                  <h5 style={{ marginBottom: '10px' }}>Conversation</h5>
-                                  {bookingMessagesByBooking[booking.id].map((msg) => (
-                                    <div key={msg.id} style={{ marginBottom: '10px' }}>
-                                      <div style={{ fontSize: '0.85rem', color: '#475569' }}>
-                                        <strong>{msg.author_email === user.email ? 'You' : msg.author_email || 'Guide'}</strong> • {new Date(msg.created_at).toLocaleString()}
+                                {bookingMessagesByBooking[booking.id]?.length > 0 && (
+                                  <div className="booking-conversation">
+                                    <h5>Conversation</h5>
+                                    {bookingMessagesByBooking[booking.id].map((msg) => (
+                                      <div key={msg.id} className="booking-message-item">
+                                        <div className="booking-message-author">
+                                          <strong>{msg.author_email === user.email ? 'You' : msg.author_email || 'Guide'}</strong> • {new Date(msg.created_at).toLocaleString()}
+                                        </div>
+                                        <div className="booking-message-text">{msg.message}</div>
                                       </div>
-                                      <div style={{ marginTop: '4px', color: '#111827' }}>{msg.message}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

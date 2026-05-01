@@ -684,13 +684,14 @@
 .booking-cards {
   display: grid;
   gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .booking-card {
   background: #f8fafc;
   border: 1px solid #dbeafe;
   border-radius: 12px;
-  padding: 18px;
+  padding: 14px;
 }
 
 .booking-card-top {
@@ -714,10 +715,116 @@
   font-size: 0.9rem;
 }
 
+.booking-card-body {
+  display: grid;
+  gap: 10px;
+}
+
 .booking-card-body p {
-  margin: 0 0 8px 0;
+  margin: 0;
   color: #4b5563;
   font-size: 0.95rem;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.booking-card-price {
+  padding: 12px 14px;
+  background: #eef2ff;
+  border-radius: 10px;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.booking-card-note {
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  border-left: 4px solid #667eea;
+  color: #1f2937;
+}
+
+.booking-card-info {
+  padding: 10px 12px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.booking-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.booking-message-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.booking-expand-btn {
+  justify-self: start;
+}
+
+.booking-message-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.booking-message-textarea {
+  width: 100%;
+  min-height: 80px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+  font-size: 0.9rem;
+  color: #1f2937;
+  background: #f8fafc;
+}
+
+.booking-message-send {
+  margin-top: 8px;
+}
+
+.booking-conversation {
+  margin-top: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.booking-conversation h5 {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.booking-message-item {
+  margin-bottom: 10px;
+}
+
+.booking-message-item:last-child {
+  margin-bottom: 0;
+}
+
+.booking-message-author {
+  font-size: 0.83rem;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.booking-message-text {
+  color: #111827;
+  line-height: 1.45;
+  white-space: pre-wrap;
 }
 
 .status-pill {
@@ -889,6 +996,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .booking-cards {
+    grid-template-columns: 1fr;
+  }
+
   .guides-grid {
     grid-template-columns: 1fr;
   }

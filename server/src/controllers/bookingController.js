@@ -180,6 +180,34 @@ async function cancelBooking(req, res) {
     }
 }
 
+async function deleteBooking(req, res) {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id || req.body.authorId || null;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const booking = await bookingRepo.getBookingById(id);
+        if (!booking) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+        if (booking.tourist_id !== userId) {
+            return res.status(403).json({ error: 'You can only delete your own bookings' });
+        }
+        if (!['cancelled', 'rejected'].includes(booking.status)) {
+            return res.status(400).json({ error: 'Only cancelled or rejected bookings can be deleted' });
+        }
+
+        await bookingRepo.deleteBooking(id);
+        res.status(200).json({ success: true, message: 'Booking deleted' });
+    } catch (error) {
+        console.error('Delete booking error:', error);
+        res.status(500).json({ error: 'Failed to delete booking' });
+    }
+}
+
 async function getNotificationCount(req, res) {
     try {
         const { guideId } = req.params;
@@ -201,5 +229,6 @@ module.exports = {
     getBookingMessages,
     sendBookingMessage,
     cancelBooking,
+    deleteBooking,
     getNotificationCount
 };

@@ -57,6 +57,7 @@ export const bookingService = {
   acceptQuote: (bookingId) => API.put(`/api/bookings/${bookingId}/accept`),
   rejectQuote: (bookingId) => API.put(`/api/bookings/${bookingId}/reject`),
   cancelBooking: (bookingId, data = {}) => API.put(`/api/bookings/${bookingId}/cancel`, data),
+  deleteBooking: (bookingId, data = {}) => API.delete(`/api/bookings/${bookingId}`, { data }),
   getBookingMessages: (bookingId) => API.get(`/api/bookings/${bookingId}/messages`),
   sendBookingMessage: (bookingId, data) => API.post(`/api/bookings/${bookingId}/messages`, data),
   getNotificationCount: (guideId) => API.get(`/api/bookings/guide/${guideId}/notifications`)

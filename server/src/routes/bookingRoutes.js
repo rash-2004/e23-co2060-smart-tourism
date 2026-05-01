@@ -13,6 +13,7 @@ router.put('/:id/quote', bookingController.quotePrice);
 router.put('/:id/accept', bookingController.acceptQuote);
 router.put('/:id/reject', bookingController.rejectQuote);
 router.put('/:id/cancel', bookingController.cancelBooking);
+router.delete('/:id', bookingController.deleteBooking);
 router.get('/guide/:guideId/notifications', bookingController.getNotificationCount);
 
 module.exports = router;

@@ -33,6 +33,19 @@ async function getBookingById(bookingId) {
     }
 }
 
+async function deleteBooking(bookingId) {
+    try {
+        const result = await db.query(
+            `DELETE FROM bookings WHERE id = $1 RETURNING *`,
+            [bookingId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+        throw error;
+    }
+}
+
 async function getBookingMessages(bookingId) {
     try {
         const result = await db.query(
@@ -150,6 +163,7 @@ async function getPendingGuideNotificationsCount(guideId) {
 module.exports = {
     createBooking,
     getBookingById,
+    deleteBooking,
     getBookingMessages,
     createBookingMessage,
     getGuideBookings,
