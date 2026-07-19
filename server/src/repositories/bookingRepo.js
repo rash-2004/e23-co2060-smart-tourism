@@ -49,7 +49,7 @@ async function deleteBooking(bookingId) {
 async function getBookingMessages(bookingId) {
     try {
         const result = await db.query(
-            `SELECT bm.id, bm.booking_id, bm.author_id, bm.message, bm.created_at, u.email as author_email
+            `SELECT bm.id, bm.booking_id, bm.author_id, bm.message, bm.created_at, bm.is_edited, bm.is_deleted, bm.updated_at, u.email as author_email
              FROM booking_messages bm
              LEFT JOIN users u ON bm.author_id = u.id
              WHERE bm.booking_id = $1
@@ -74,6 +74,49 @@ async function createBookingMessage(bookingId, authorId, message) {
         return result.rows[0];
     } catch (error) {
         console.error('Error creating booking message:', error);
+        throw error;
+    }
+}
+
+async function getBookingMessageById(messageId) {
+    try {
+        const result = await db.query(
+            `SELECT * FROM booking_messages WHERE id = $1`,
+            [messageId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error fetching booking message by ID:', error);
+        throw error;
+    }
+}
+
+async function updateBookingMessage(messageId, newMessage) {
+    try {
+        const result = await db.query(
+            `UPDATE booking_messages 
+             SET message = $1, is_edited = true, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2 RETURNING *`,
+            [newMessage, messageId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error updating booking message:', error);
+        throw error;
+    }
+}
+
+async function deleteBookingMessage(messageId) {
+    try {
+        const result = await db.query(
+            `UPDATE booking_messages 
+             SET is_deleted = true, message = 'This message was deleted', updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1 RETURNING *`,
+            [messageId]
+        );
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error deleting booking message:', error);
         throw error;
     }
 }
@@ -167,6 +210,9 @@ module.exports = {
     deleteBooking,
     getBookingMessages,
     createBookingMessage,
+    getBookingMessageById,
+    updateBookingMessage,
+    deleteBookingMessage,
     getGuideBookings,
     getTouristBookings,
     updateBookingStatus,

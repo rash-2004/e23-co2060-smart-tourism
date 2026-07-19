@@ -60,6 +60,8 @@ export const bookingService = {
   deleteBooking: (bookingId, data = {}) => API.delete(`/api/bookings/${bookingId}`, { data }),
   getBookingMessages: (bookingId) => API.get(`/api/bookings/${bookingId}/messages`),
   sendBookingMessage: (bookingId, data) => API.post(`/api/bookings/${bookingId}/messages`, data),
+  editBookingMessage: (bookingId, messageId, data) => API.put(`/api/bookings/${bookingId}/messages/${messageId}`, data),
+  deleteBookingMessage: (bookingId, messageId, data = {}) => API.delete(`/api/bookings/${bookingId}/messages/${messageId}`, { data }),
   getNotificationCount: (guideId) => API.get(`/api/bookings/guide/${guideId}/notifications`)
 };
 
@@ -104,4 +106,12 @@ export const profileService = {
 // System Services
 export const systemService = {
   getStatus: () => API.get('/api/system/status')
+};
+
+// Notification Services
+export const notificationService = {
+  getUserNotifications: (userId) => API.get(`/api/notifications/${userId}`),
+  getUnreadCount: (userId) => API.get(`/api/notifications/${userId}/unread-count`),
+  markAllAsRead: (userId) => API.put(`/api/notifications/${userId}/mark-all-read`),
+  markAsRead: (userId, notificationId) => API.put(`/api/notifications/${userId}/${notificationId}/read`)
 };

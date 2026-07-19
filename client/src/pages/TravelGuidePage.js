@@ -1,11 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { guideService, bookingService } from '../services';
+import { guideService, bookingService, notificationService } from '../services';
 import SearchBar from '../components/SearchBar';
 import ReviewSection from '../components/ReviewSection';
-import { FaAward, FaDollarSign, FaLanguage, FaHistory, FaCheckCircle, FaMapPin, FaTrophy, FaIdCard, FaPaperPlane, FaClipboardList, FaComments, FaStar } from 'react-icons/fa';
+import { FaAward, FaDollarSign, FaLanguage, FaHistory, FaCheckCircle, FaMapPin, FaTrophy, FaIdCard, FaPaperPlane, FaClipboardList, FaComments, FaStar, FaEdit, FaTrash } from 'react-icons/fa';
 import { formatUserId } from '../utils/formatters';
+import { io } from 'socket.io-client';
 import './TravelGuidePage.css';
 
 const TravelGuidePage = () => {
@@ -22,7 +23,11 @@ const TravelGuidePage = () => {
   const [showContact, setShowContact] = useState(false);
   const [bookingMessagesByBooking, setBookingMessagesByBooking] = useState({});
   const [messageTextByBooking, setMessageTextByBooking] = useState({});
+  const [unreadBookings, setUnreadBookings] = useState({});
   const [expandedBookingId, setExpandedBookingId] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editMessageText, setEditMessageText] = useState('');
+  const socketRef = useRef(null);
 
   const fetchBookings = useCallback(async () => {
     if (!user?.id) return;
@@ -108,8 +113,53 @@ const TravelGuidePage = () => {
     fetchGuides();
     if (user?.role === 'tourist') {
       fetchBookings();
+      // Fetch unread notifications to highlight chats
+      notificationService.getUserNotifications(user.id).then(res => {
+         if (res.data.success) {
+             const unreadMsgNotifs = res.data.notifications.filter(n => !n.is_read && n.type === 'new_message');
+             const unreadMap = {};
+             unreadMsgNotifs.forEach(n => {
+                 if (n.reference_id) unreadMap[n.reference_id] = true;
+             });
+             setUnreadBookings(unreadMap);
+         }
+      }).catch(err => console.error(err));
     }
-  }, [user?.role, fetchGuides, fetchBookings]);
+  }, [user?.role, user?.id, fetchGuides, fetchBookings]);
+
+  useEffect(() => {
+    socketRef.current = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
+
+    socketRef.current.on('new_message', (msg) => {
+        setBookingMessagesByBooking(prev => {
+            const existing = prev[msg.booking_id] || [];
+            if (existing.find(m => m.id === msg.id)) return prev;
+            return { ...prev, [msg.booking_id]: [...existing, msg] };
+        });
+        
+        if (msg.author_id !== user?.id) {
+           setUnreadBookings(prev => ({ ...prev, [msg.booking_id]: true }));
+        }
+    });
+
+    socketRef.current.on('edit_message', (msg) => {
+        setBookingMessagesByBooking(prev => ({
+            ...prev,
+            [msg.booking_id]: prev[msg.booking_id]?.map(m => m.id === msg.id ? msg : m) || []
+        }));
+    });
+
+    socketRef.current.on('delete_message', (msg) => {
+        setBookingMessagesByBooking(prev => ({
+            ...prev,
+            [msg.booking_id]: prev[msg.booking_id]?.map(m => m.id === msg.id ? msg : m) || []
+        }));
+    });
+
+    return () => {
+        if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, [user?.id]);
 
   // Handle auto-opening portfolio from dashboard
   useEffect(() => {
@@ -138,12 +188,53 @@ const TravelGuidePage = () => {
         message: message.trim()
       });
       setMessageTextByBooking(prev => ({ ...prev, [bookingId]: '' }));
-      await fetchBookingMessagesForId(bookingId);
-      setSuccess('Message sent to your guide.');
     } catch (err) {
       console.error('Error sending booking message:', err);
       setError(err.response?.data?.error || 'Failed to send message.');
     }
+  };
+
+  const handleEditMessage = async (bookingId, messageId) => {
+      if (!editMessageText.trim()) return;
+      try {
+          const res = await bookingService.editBookingMessage(bookingId, messageId, { message: editMessageText, authorId: user.id });
+          
+          if (res.data && res.data.success) {
+              setBookingMessagesByBooking(prev => ({
+                  ...prev,
+                  [bookingId]: prev[bookingId]?.map(m => m.id === messageId ? res.data.message : m) || []
+              }));
+          }
+          
+          setEditingMessageId(null);
+          setEditMessageText('');
+      } catch (err) {
+          setError(err.response?.data?.error || 'Failed to edit message');
+      }
+  };
+
+  const handleDeleteMessage = async (bookingId, messageId) => {
+      if (!window.confirm('Are you sure you want to delete this message?')) return;
+      try {
+          const res = await bookingService.deleteBookingMessage(bookingId, messageId, { authorId: user.id });
+          
+          if (res.data && res.data.success) {
+              setBookingMessagesByBooking(prev => ({
+                  ...prev,
+                  [bookingId]: prev[bookingId]?.map(m => m.id === messageId ? res.data.message : m) || []
+              }));
+          }
+      } catch (err) {
+          setError(err.response?.data?.error || 'Failed to delete message');
+      }
+  };
+
+  const isEditable = (msg) => {
+      if (String(msg.author_id) !== String(user.id)) return false;
+      if (msg.is_deleted) return false;
+      const msgTime = new Date(msg.created_at).getTime();
+      const now = new Date().getTime();
+      return (now - msgTime) <= 60 * 60 * 1000;
   };
 
   const handleSearch = (query) => {
@@ -182,8 +273,21 @@ const TravelGuidePage = () => {
     if (user?.role !== 'tourist') return;
     bookings.forEach((booking) => {
       fetchBookingMessagesForId(booking.id);
+      if (socketRef.current) {
+          socketRef.current.emit('join_booking', booking.id);
+      }
     });
   }, [bookings, user?.role, fetchBookingMessagesForId]);
+
+  useEffect(() => {
+      if (expandedBookingId && unreadBookings[expandedBookingId]) {
+          setUnreadBookings(prev => {
+              const next = { ...prev };
+              delete next[expandedBookingId];
+              return next;
+          });
+      }
+  }, [expandedBookingId, unreadBookings]);
 
   return (
     <main className="travel-guide-page">
@@ -296,10 +400,13 @@ const TravelGuidePage = () => {
                     <button
                       type="button"
                       className="guide-request-btn guide-request-btn--secondary"
-                      onClick={() => setExpandedBookingId(prev => (prev === booking.id ? null : booking.id))}
+                      onClick={() => {
+                          setExpandedBookingId(prev => (prev === booking.id ? null : booking.id));
+                      }}
                     >
                       <FaComments className="guide-request-btn__icon" aria-hidden />
                       {expandedBookingId === booking.id ? 'Hide messages' : 'Messages'}
+                      {unreadBookings[booking.id] && <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#ef4444', borderRadius: '50%', marginLeft: '5px' }}></span>}
                     </button>
                   </div>
 
@@ -313,15 +420,37 @@ const TravelGuidePage = () => {
                             {bookingMessagesByBooking[booking.id].map(m => (
                               <div
                                 key={m.id}
-                                className={`guide-request-bubble ${m.author_email === user.email ? 'guide-request-bubble--me' : 'guide-request-bubble--guide'}`}
+                                className={`guide-request-bubble ${String(m.author_id) === String(user.id) ? 'guide-request-bubble--me' : 'guide-request-bubble--guide'}`}
                               >
                                 <div className="guide-request-bubble__meta">
                                   <strong className="guide-request-bubble__who">
-                                    {m.author_email === user.email ? 'You' : 'Guide'}
+                                    {String(m.author_id) === String(user.id) ? 'You' : 'Guide'}
                                   </strong>
-                                  <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <span>{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    {isEditable(m) && !editingMessageId && (
+                                        <div style={{ display: 'flex', gap: '5px', marginLeft: '10px' }}>
+                                            <button onClick={() => { setEditingMessageId(m.id); setEditMessageText(m.message); }} style={{ background: 'none', border: 'none', color: 'currentColor', opacity: 0.7, cursor: 'pointer', padding: 0 }}><FaEdit /></button>
+                                            <button onClick={() => handleDeleteMessage(booking.id, m.id)} style={{ background: 'none', border: 'none', color: 'currentColor', opacity: 0.7, cursor: 'pointer', padding: 0 }}><FaTrash /></button>
+                                        </div>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="guide-request-bubble__text">{m.message}</div>
+                                
+                                {editingMessageId === m.id ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '5px' }}>
+                                        <input type="text" value={editMessageText} onChange={(e) => setEditMessageText(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: 'none', color: 'black' }} />
+                                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
+                                            <button onClick={() => setEditingMessageId(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '0.7rem' }}>Cancel</button>
+                                            <button onClick={() => handleEditMessage(booking.id, m.id)} style={{ background: 'white', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>Save</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="guide-request-bubble__text" style={{ fontStyle: m.is_deleted ? 'italic' : 'normal', opacity: m.is_deleted ? 0.7 : 1 }}>
+                                        {m.message}
+                                        {m.is_edited && !m.is_deleted && <span style={{ fontSize: '0.65rem', marginLeft: '5px', opacity: 0.7 }}>(edited)</span>}
+                                    </div>
+                                )}
                               </div>
                             ))}
                           </div>

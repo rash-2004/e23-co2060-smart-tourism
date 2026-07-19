@@ -9,6 +9,8 @@ router.get('/guide/:guideId', bookingController.getGuideBookings);
 router.get('/tourist/:touristId', bookingController.getTouristBookings);
 router.get('/:id/messages', bookingController.getBookingMessages);
 router.post('/:id/messages', bookingController.sendBookingMessage);
+router.put('/:id/messages/:messageId', bookingController.editBookingMessage);
+router.delete('/:id/messages/:messageId', bookingController.deleteBookingMessage);
 router.put('/:id/quote', bookingController.quotePrice);
 router.put('/:id/accept', bookingController.acceptQuote);
 router.put('/:id/reject', bookingController.rejectQuote);

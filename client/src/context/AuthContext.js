@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import API from '../services/api';
+import { io } from 'socket.io-client';
 
 const AuthContext = createContext();
 
@@ -7,6 +8,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const globalSocketRef = useRef(null);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -20,6 +23,28 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (user && user.id) {
+        // Fetch initial count
+        API.get(`/api/notifications/${user.id}/unread-count`).then(res => {
+            if (res.data.success) setUnreadNotificationCount(res.data.count);
+        }).catch(err => console.error('Failed to fetch unread count:', err));
+
+        globalSocketRef.current = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
+        globalSocketRef.current.emit('join_user', user.id);
+        
+        globalSocketRef.current.on('global_notification', (data) => {
+            setUnreadNotificationCount(prev => prev + 1);
+        });
+
+        return () => {
+            if (globalSocketRef.current) globalSocketRef.current.disconnect();
+        };
+    }
+  }, [user]);
+
+  const clearUnreadNotifications = () => setUnreadNotificationCount(0);
 
   const login = async (email, password) => {
     try {
@@ -131,7 +156,10 @@ export const AuthProvider = ({ children }) => {
     verifyEmail,
     verifyAdminLogin,
     logout,
-    isAuthenticated
+    isAuthenticated,
+    unreadNotificationCount,
+    setUnreadNotificationCount,
+    clearUnreadNotifications
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
