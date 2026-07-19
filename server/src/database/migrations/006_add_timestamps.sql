@@ -1,0 +1,3 @@
+-- Add created_at column to itineraries table if it doesn't exist
+ALTER TABLE itineraries 
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;

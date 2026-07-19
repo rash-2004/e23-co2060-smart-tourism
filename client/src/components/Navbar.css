@@ -1,0 +1,137 @@
+.navbar {
+  background-color: var(--bg-card);
+  padding: 0.75rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.navbar-container {
+  width: 100%;
+  margin: 0;
+  padding: 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+.navbar-logo:hover {
+  opacity: 0.9;
+}
+
+.navbar-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.nav-menu {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-link, .register-link, .logout-btn, .theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-body) !important;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 12px;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-link svg, .register-link svg, .logout-btn svg, .theme-toggle-btn svg {
+  font-size: 1.1rem;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+/* Purple Underline Hover Effect */
+.nav-link::after, .register-link::after, .logout-btn::after, .theme-toggle-btn::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background-color: var(--primary);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link:hover::after, .register-link:hover::after, .logout-btn:hover::after, .theme-toggle-btn:hover::after {
+  width: 80%;
+}
+
+.nav-link:hover, .register-link:hover, .logout-btn:hover, .theme-toggle-btn:hover {
+  color: var(--primary) !important;
+  transform: none !important;
+}
+
+.login-link {
+  /* Inherits unified style, just ensuring no extra styles override it */
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--border);
+}
+
+.user-name {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .navbar-container { padding: 0 16px; }
+  .nav-menu { gap: 1rem; font-size: 0.85rem; }
+  .register-link { padding: 6px 12px; }
+  .nav-user { border-left: none; padding-left: 0; }
+}
+
+.notif-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background-color: var(--danger);
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px var(--bg-card);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+}

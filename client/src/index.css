@@ -1,0 +1,515 @@
+:root {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --secondary: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --text-head: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+body.dark-mode {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --text-head: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border: #1e293b;
+  --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-page);
+  color: var(--text-body);
+  line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-head);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+/* Global Styles */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* Container */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Loading & Errors */
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 12px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 12px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  gap: 20px;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Buttons */
+a {
+  text-decoration: none;
+  color: var(--primary);
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+ul {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Button Styles */
+.btn {
+  display: inline-block;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-success {
+  background-color: var(--secondary);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Card Styles */
+.card {
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* ===========================
+   DARK MODE STYLES
+   =========================== */
+html.dark-mode,
+body.dark-mode,
+body.dark-mode #root,
+body.dark-mode .App {
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .navbar {
+  background-color: #1f2937 !important;
+  border-bottom: 1px solid #333;
+}
+
+body.dark-mode .card,
+body.dark-mode .dashboard-card,
+body.dark-mode .place-card,
+body.dark-mode .guide-card,
+body.dark-mode .auth-card,
+body.dark-mode .auth-box,
+body.dark-mode .review-form,
+body.dark-mode .itinerary-summary,
+body.dark-mode .itinerary-builder,
+body.dark-mode .stat-card,
+body.dark-mode .step-content,
+body.dark-mode .guide-profile-card,
+body.dark-mode .info-card,
+body.dark-mode .status-content,
+body.dark-mode .modal-header,
+body.dark-mode .modal-body,
+body.dark-mode .modal-footer,
+body.dark-mode .modal-contact,
+body.dark-mode .reviews-section,
+body.dark-mode .review-item,
+body.dark-mode .feature-card,
+body.dark-mode .booking-card,
+body.dark-mode .empty-state,
+body.dark-mode .itinerary-card,
+body.dark-mode .itinerary-form,
+body.dark-mode .stat-item,
+body.dark-mode .modal-section,
+body.dark-mode .create-itinerary,
+body.dark-mode .itineraries-list,
+body.dark-mode .itinerary-content,
+body.dark-mode .detail-info,
+body.dark-mode .add-place-section,
+body.dark-mode .place-suggestion-card,
+body.dark-mode .guide-suggestions,
+body.dark-mode .guide-stats,
+body.dark-mode .guide-stats span,
+body.dark-mode .guide-languages,
+body.dark-mode .booking-request-summary,
+body.dark-mode .booking-message-section,
+body.dark-mode .booking-card-info,
+body.dark-mode .my-bookings-section,
+body.dark-mode .modal-stat,
+body.dark-mode .place-item,
+body.dark-mode .how-it-works,
+body.dark-mode .itinerary-item,
+body.dark-mode .journey-summary,
+body.dark-mode .stat,
+body.dark-mode .matched-places,
+body.dark-mode .booking-card,
+body.dark-mode .booking-card-price,
+body.dark-mode .booking-card-note,
+body.dark-mode .booking-conversation,
+body.dark-mode .booking-message-item,
+body.dark-mode .booking-message-section,
+body.dark-mode .status-pill,
+body.dark-mode .map-preview-container,
+body.dark-mode .leaflet-popup-content-wrapper,
+body.dark-mode .leaflet-popup-tip,
+body.dark-mode .reviews-section,
+body.dark-mode .review-item,
+body.dark-mode .empty-state,
+body.dark-mode .stat-item,
+body.dark-mode .status-content,
+body.dark-mode .login-prompt,
+body.dark-mode .review-form-container {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+  border-color: #333 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .status-pill,
+body.dark-mode .category-tag,
+body.dark-mode .badge,
+body.dark-mode .map-popup-cat {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+}
+
+body.dark-mode .itinerary-item.active {
+  background-color: #2c3e50 !important;
+  border-left-color: #667eea !important;
+}
+
+body.dark-mode .itinerary-item:hover {
+  background-color: #2a2a2a !important;
+}
+
+body.dark-mode .place-search-wrapper,
+body.dark-mode .place-suggestion-card,
+body.dark-mode .place-suggestion-img-wrap {
+  background-color: #2a2a2a !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode h1, 
+body.dark-mode h2, 
+body.dark-mode h3, 
+body.dark-mode h4, 
+body.dark-mode h5, 
+body.dark-mode h6,
+body.dark-mode strong,
+body.dark-mode b,
+body.dark-mode .booking-card-title,
+body.dark-mode .place-info h1 {
+  color: #ffffff !important;
+}
+
+body.dark-mode p, 
+body.dark-mode label,
+body.dark-mode .stat-label,
+body.dark-mode .journey-stat__label,
+body.dark-mode .specialization,
+body.dark-mode .experience,
+body.dark-mode .place-description p,
+body.dark-mode .review-text,
+body.dark-mode .bio {
+  color: #b0b0b0;
+}
+
+body.dark-mode .modal-stat .stat-icon {
+  background: transparent !important;
+}
+
+body.dark-mode .modal-stat {
+  border: 1px solid #444 !important;
+}
+
+body.dark-mode .places-page,
+body.dark-mode .place-detail-page,
+body.dark-mode .dashboard-container,
+body.dark-mode .dashboard-page,
+body.dark-mode .itinerary-page,
+body.dark-mode .home-page,
+body.dark-mode .auth-container,
+body.dark-mode .auth-page,
+body.dark-mode .travel-guide-page,
+body.dark-mode .features-section,
+body.dark-mode .features,
+body.dark-mode .how-it-works,
+body.dark-mode .cta-section,
+body.dark-mode .guide-list {
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .card:hover,
+body.dark-mode .guide-card:hover {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+body.dark-mode h1, 
+body.dark-mode h2, 
+body.dark-mode h3, 
+body.dark-mode h4, 
+body.dark-mode h5, 
+body.dark-mode h6 {
+  color: #f5f5f5;
+}
+
+body.dark-mode footer {
+  background-color: #111;
+  border-top: 1px solid #333;
+}
+
+body.dark-mode .modal-content,
+body.dark-mode .modal,
+body.dark-mode .modal-box {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .modal-stat .stat-val {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .list-group-item,
+body.dark-mode .table td,
+body.dark-mode .table th {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+body.dark-mode .error,
+body.dark-mode .success {
+  background-color: #2c2c2c;
+}
+body.dark-mode .error {
+  border-color: #dc3545;
+  color: #ff6b6b;
+}
+body.dark-mode .success {
+  border-color: #28a745;
+  color: #51cf66;
+}
+
+.cta-section {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+body.dark-mode .cta-section {
+  background: linear-gradient(135deg, #1e1b4b 0%, #111827 100%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .step-number {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+}
+
+body.dark-mode .cta-section h2 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .cta-section .btn-primary {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+body.dark-mode .cta-section .btn-primary:hover {
+  background: #4f46e5 !important;
+  transform: translateY(-2px);
+}
+
+/* Ensure all generic light sections are caught */
+body.dark-mode section,
+body.dark-mode .container-fluid,
+body.dark-mode .row,
+body.dark-mode .col-md-*,
+body.dark-mode .bg-light,
+body.dark-mode .bg-white {
+  background-color: transparent !important;
+}
+
+/* Leaflet Map Dark Mode adjustment */
+body.dark-mode .leaflet-container {
+  background: #121212 !important;
+}
+
+body.dark-mode .leaflet-bar a {
+  background-color: #2c2c2c !important;
+  color: #e0e0e0 !important;
+  border-bottom: 1px solid #444;
+}
+
+body.dark-mode .leaflet-control-attribution {
+  background: rgba(0,0,0,0.5) !important;
+  color: #888 !important;
+}
+
+body.dark-mode .contact-item {
+  background-color: #2a2a2a !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .contact-item:hover {
+  background-color: #333 !important;
+}
+

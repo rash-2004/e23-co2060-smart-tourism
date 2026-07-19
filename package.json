@@ -1,0 +1,11 @@
+{
+  "name": "smart-tourism-backend-root",
+  "version": "1.0.0",
+  "description": "Root package.json to help free hosting providers (like Glitch) find and start the backend server automatically.",
+  "scripts": {
+    "start": "cd server && npm install && npm start"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
