@@ -15,17 +15,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// In-memory store for pending registrations (email -> { userData, code, expires })
-const pendingRegistrations = new Map();
-
-// In-memory store for pending admin logins (email -> { userId, email, role, code, expires })
-const pendingLogins = new Map();
-
-/**
- * we use bycrypt because if a hacker steals our database, they will only see randomized hash strings, 
- * not our tourists' real passwords. bcrypt also adds a 'salt'—random data added 
- * to the password before hashing—which defends against Rainbow Table cyber attacks."
- */
 const register = async (req, res) => {
     try {
         const { email, password, role, full_name, contact_number, covered_locations, profile_image_url } = req.body;
@@ -40,155 +29,10 @@ const register = async (req, res) => {
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
-        // 3. SPECIAL FLOW FOR EVERYONE: Require OTP for Ultra-Safe Registration
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        pendingRegistrations.set(email, {
-            userData: { password, role, full_name, contact_number, covered_locations, profile_image_url },
-            code,
-            expires: Date.now() + 10 * 60 * 1000 // 10 mins
-        });
-
-        const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
-            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
-                <tr>
-                    <td style="padding: 40px 40px 30px 40px; text-align: center;">
-                        <h1 style="color: #ffffff; font-size: 28px; margin: 0 0 10px 0; font-weight: 800; letter-spacing: -0.5px;">Verify Your Email</h1>
-                        <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0;">Use the code below to complete your registration for Smart Tourism.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0 40px 40px 40px;">
-                        <div style="background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 24px; text-align: center;">
-                            <span style="font-family: 'SF Mono', Consolas, Menlo, Monaco, monospace; font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #6366f1;">${code}</span>
-                        </div>
-                        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 24px;">This code will expire in 10 minutes.</p>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        `;
-
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log(`\n==== MOCK EMAIL SENT ====\nTo: ${email}\nOTP Code: ${code}\n=========================\n`);
-        } else {
-            try {
-                await transporter.sendMail({
-                    from: `"Smart Tourism" <${process.env.EMAIL_USER}>`,
-                    to: email,
-                    subject: 'Smart Tourism - Registration Verification Code',
-                    html: emailHtml
-                });
-            } catch (error) {
-                console.error('Nodemailer Error:', error);
-                return res.status(500).json({ error: 'Failed to send verification email. Please check your EMAIL_USER and EMAIL_PASS configuration.' });
-            }
-        }
-
-        return res.status(200).json({ 
-            message: 'Verification code sent to your email.',
-            requires_otp: true,
-            email 
-        });
-
-    } catch (error) {
-        console.error('Registration Error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-/**
- * RESEND OTP - Resends the 6 digit code
- */
-const resendOtp = async (req, res) => {
-    try {
-        const { email } = req.body;
-        const pending = pendingRegistrations.get(email);
-        
-        if (!pending) {
-            return res.status(400).json({ error: 'No pending registration found for this email. Please register again.' });
-        }
-
-        const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-        pending.code = newCode;
-        pending.expires = Date.now() + 10 * 60 * 1000; // Reset to 10 mins
-
-        const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
-            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
-                <tr>
-                    <td style="padding: 40px 40px 30px 40px; text-align: center;">
-                        <h1 style="color: #ffffff; font-size: 28px; margin: 0 0 10px 0; font-weight: 800; letter-spacing: -0.5px;">Your New Verification Code</h1>
-                        <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0;">Use the new code below to complete your registration.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0 40px 40px 40px;">
-                        <div style="background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 24px; text-align: center;">
-                            <span style="font-family: 'SF Mono', Consolas, Menlo, Monaco, monospace; font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #6366f1;">${newCode}</span>
-                        </div>
-                        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 24px;">This code will expire in 10 minutes.</p>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        `;
-
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log(`\n==== MOCK EMAIL SENT (RESEND) ====\nTo: ${email}\nNew OTP Code: ${newCode}\n=========================\n`);
-        } else {
-            try {
-                await transporter.sendMail({
-                    from: `"Smart Tourism" <${process.env.EMAIL_USER}>`,
-                    to: email,
-                    subject: 'Smart Tourism - New Verification Code',
-                    html: emailHtml
-                });
-            } catch (error) {
-                console.error('Nodemailer Error (ResendOTP):', error);
-                return res.status(500).json({ error: 'Failed to resend verification email. Please check your EMAIL_USER and EMAIL_PASS configuration.' });
-            }
-        }
-
-        res.status(200).json({ message: 'New verification code sent successfully.' });
-    } catch (error) {
-        console.error('Resend OTP Error:', error);
-        res.status(500).json({ error: 'Internal server error while resending OTP.' });
-    }
-};
-
-/**
- * VERIFY EMAIL - Complete user registration
- */
-const verifyEmail = async (req, res) => {
-    try {
-        const { email, code } = req.body;
-        const pending = pendingRegistrations.get(email);
-
-        if (!pending) {
-            return res.status(400).json({ error: 'No pending registration found for this email.' });
-        }
-
-        if (Date.now() > pending.expires) {
-            pendingRegistrations.delete(email);
-            return res.status(400).json({ error: 'Verification code has expired. Please register again.' });
-        }
-
-        if (pending.code !== code) {
-            return res.status(400).json({ error: 'Invalid verification code.' });
-        }
-
-        // Code is valid, proceed to save the user
-        const { password, role, full_name, contact_number, covered_locations, profile_image_url } = pending.userData;
-
-        // Hash the password
-        const saltRounds = 10;
-        const passwordHash = await bcrypt.hash(password, saltRounds);
-
-        // Save the new user to the database
+        // 3. Save the new user to the database directly
         const newUser = await userRepo.createUser(email, passwordHash, role);
 
-        // Create initial profile if data provided
+        // 4. Create initial profile if data provided
         if (full_name) {
             if (role === 'guide') {
                 await userRepo.updateGuideProfile(
@@ -215,16 +59,13 @@ const verifyEmail = async (req, res) => {
             }
         }
 
-        // Remove from pending registrations
-        pendingRegistrations.delete(email);
-
         res.status(201).json({
-            message: 'Email verified and user registered successfully!',
+            message: 'User registered successfully!',
             user: newUser
         });
 
     } catch (error) {
-        console.error('Verification Error:', error);
+        console.error('Registration Error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -386,4 +227,4 @@ const verifyLogin = async (req, res) => {
     }
 };
 
-module.exports = { register, verifyEmail, resendOtp, login, verifyLogin };
+module.exports = { register, login, verifyLogin };

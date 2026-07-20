@@ -50,21 +50,8 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const { register, verifyEmail, login, resendOtp } = useAuth();
+  const { register, login } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let timer;
-    if (resendCooldown > 0) {
-      timer = setInterval(() => {
-        setResendCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
 
   const handleLocationToggle = (locationName) => {
     let current = formData.covered_locations ? formData.covered_locations.split(', ') : [];
@@ -137,49 +124,13 @@ const RegisterPage = () => {
     });
     
     if (result.success) {
-      if (result.requires_otp) {
-        setShowOtp(true);
-        setResendCooldown(60); // Start 60s cooldown
-      } else {
-        navigate('/');
-      }
-    } else {
-      setError(result.error);
-    }
-    
-    setLoading(false);
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    
-    setError('');
-    const result = await resendOtp(formData.email);
-    if (result.success) {
-      setResendCooldown(60); // Reset timer
-      alert('A new code has been sent to your email.');
-    } else {
-      setError(result.error || 'Failed to resend code');
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    if (!otp) {
-      setError('Please enter the verification code');
-      return;
-    }
-
-    setLoading(true);
-    const result = await verifyEmail(formData.email, otp);
-
-    if (result.success) {
-      // Auto-login after successful verification
+      // Auto-login after successful registration
       await login(formData.email, formData.password);
       navigate('/dashboard');
     } else {
       setError(result.error);
     }
+    
     setLoading(false);
   };
 
@@ -203,50 +154,6 @@ const RegisterPage = () => {
           
           {error && <div className="error">{error}</div>}
         
-        {showOtp ? (
-          <form onSubmit={handleVerifyOtp} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="otp" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-head)', fontWeight: '600' }}>
-                Verification Code
-              </label>
-              <input
-                type="text"
-                id="otp"
-                name="otp"
-                value={otp}
-                onChange={(e) => { setOtp(e.target.value); setError(''); }}
-                placeholder="Enter 6-digit code"
-                required
-                maxLength="6"
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '4px' }}
-                className="auth-input"
-              />
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
-                We've sent a 6-digit code to {formData.email}
-              </p>
-            </div>
-            
-            <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-              {loading ? 'Verifying...' : 'Verify Email & Create Account'}
-            </button>
-            
-            <button 
-              type="button" 
-              onClick={handleResendOtp} 
-              className="btn btn-outline btn-block" 
-              style={{ marginTop: '12px', borderColor: 'var(--primary)', color: 'var(--primary)' }} 
-              disabled={loading || resendCooldown > 0}
-            >
-              {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : 'Resend Code'}
-            </button>
-
-            <button type="button" onClick={() => setShowOtp(false)} className="btn btn-outline btn-block" style={{ marginTop: '12px' }} disabled={loading}>
-              Back
-            </button>
-          </form>
-        ) : (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group" style={{ marginBottom: '32px' }}>
               <label htmlFor="role" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-head)', fontWeight: '800', textTransform: 'uppercase', fontSize: '0.85rem' }}>
@@ -694,11 +601,9 @@ const RegisterPage = () => {
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-              {loading ? 'Sending Code...' : 'Register'}
+              {loading ? 'Creating Account...' : 'Register'}
             </button>
           </form>
-        )}
-
         <div className="auth-footer" style={{ textAlign: 'center', marginTop: '20px', color: 'var(--text-muted)' }}>
           <p>Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}>Sign in</Link></p>
         </div>
