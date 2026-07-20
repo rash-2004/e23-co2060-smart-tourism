@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const userRepo = require('../repositories/userRepo');
 const nodemailer = require('nodemailer');
 
+// Fix for Render's IPv6 ENETUNREACH error when sending emails
+require('dns').setDefaultResultOrder('ipv4first');
+
 // Initialize Nodemailer transporter
 const transporter = nodemailer.createTransport({
     service: 'gmail',
