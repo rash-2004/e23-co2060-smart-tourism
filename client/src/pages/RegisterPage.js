@@ -52,8 +52,19 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState('');
-  const { register, verifyEmail, login } = useAuth();
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const { register, verifyEmail, login, resendOtp } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleLocationToggle = (locationName) => {
     let current = formData.covered_locations ? formData.covered_locations.split(', ') : [];
@@ -126,12 +137,30 @@ const RegisterPage = () => {
     });
     
     if (result.success) {
-      navigate('/');
+      if (result.requires_otp) {
+        setShowOtp(true);
+        setResendCooldown(60); // Start 60s cooldown
+      } else {
+        navigate('/');
+      }
     } else {
       setError(result.error);
     }
     
     setLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    
+    setError('');
+    const result = await resendOtp(formData.email);
+    if (result.success) {
+      setResendCooldown(60); // Reset timer
+      alert('A new code has been sent to your email.');
+    } else {
+      setError(result.error || 'Failed to resend code');
+    }
   };
 
   const handleVerifyOtp = async (e) => {
@@ -203,6 +232,16 @@ const RegisterPage = () => {
               {loading ? 'Verifying...' : 'Verify Email & Create Account'}
             </button>
             
+            <button 
+              type="button" 
+              onClick={handleResendOtp} 
+              className="btn btn-outline btn-block" 
+              style={{ marginTop: '12px', borderColor: 'var(--primary)', color: 'var(--primary)' }} 
+              disabled={loading || resendCooldown > 0}
+            >
+              {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : 'Resend Code'}
+            </button>
+
             <button type="button" onClick={() => setShowOtp(false)} className="btn btn-outline btn-block" style={{ marginTop: '12px' }} disabled={loading}>
               Back
             </button>

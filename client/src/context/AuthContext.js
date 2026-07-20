@@ -84,6 +84,10 @@ export const AuthProvider = ({ children }) => {
         ...additionalData
       });
       
+      if (response.data.requires_otp) {
+        return { success: true, requires_otp: true, email: response.data.email };
+      }
+
       if (response.data.token && response.data.user) {
         const { user: userData, token: authToken } = response.data;
         setUser(userData);
@@ -98,6 +102,21 @@ export const AuthProvider = ({ children }) => {
       return { 
         success: false, 
         error: error.response?.data?.error || 'Registration failed' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOtp = async (email) => {
+    try {
+      setLoading(true);
+      const response = await API.post('/api/auth/resend-otp', { email });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Failed to resend OTP' 
       };
     } finally {
       setLoading(false);
@@ -162,6 +181,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
+    resendOtp,
     verifyEmail,
     verifyAdminLogin,
     logout,

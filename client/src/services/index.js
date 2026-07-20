@@ -4,6 +4,7 @@ import API from './api';
 export const authService = {
   login: (email, password) => API.post('/api/auth/login', { email, password }),
   register: (email, password, role) => API.post('/api/auth/register', { email, password, role }),
+  resendOtp: (email) => API.post('/api/auth/resend-otp', { email }),
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

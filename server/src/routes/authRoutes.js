@@ -14,4 +14,7 @@ router.post('/login', authController.login);
 // When a POST request hits /verify-login, verify the OTP for admin login
 router.post('/verify-login', authController.verifyLogin);
 
+// When a POST request hits /resend-otp, resend the verification email
+router.post('/resend-otp', authController.resendOtp);
+
 module.exports = router;

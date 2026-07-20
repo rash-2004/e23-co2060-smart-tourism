@@ -31,58 +31,111 @@ const register = async (req, res) => {
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
-        // 3. Create user
-        const newUser = await userRepo.createUser(email, passwordHash, role);
+        // 3. SPECIAL FLOW FOR EVERYONE: Require OTP for Ultra-Safe Registration
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        pendingRegistrations.set(email, {
+            userData: { password, role, full_name, contact_number, covered_locations, profile_image_url },
+            code,
+            expires: Date.now() + 10 * 60 * 1000 // 10 mins
+        });
 
-        // 4. Create profile
-        if (full_name) {
-            if (role === 'guide') {
-                await userRepo.updateGuideProfile(
-                    newUser.id, 
-                    full_name, 
-                    null, // bio
-                    null, // license_number
-                    0, // hourly_rate
-                    contact_number || null,
-                    profile_image_url || null,
-                    null, // specialization
-                    0, // experience_years
-                    null, // languages
-                    covered_locations || null
-                );
-            } else {
-                await userRepo.updateTouristProfile(
-                    newUser.id, 
-                    full_name, 
-                    '', 
-                    contact_number || null,
-                    profile_image_url || null
-                );
-            }
+        const emailHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
+                <tr>
+                    <td style="padding: 40px 40px 30px 40px; text-align: center;">
+                        <h1 style="color: #ffffff; font-size: 28px; margin: 0 0 10px 0; font-weight: 800; letter-spacing: -0.5px;">Verify Your Email</h1>
+                        <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0;">Use the code below to complete your registration for Smart Tourism.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 40px 40px 40px;">
+                        <div style="background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 24px; text-align: center;">
+                            <span style="font-family: 'SF Mono', Consolas, Menlo, Monaco, monospace; font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #6366f1;">${code}</span>
+                        </div>
+                        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 24px;">This code will expire in 10 minutes.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        `;
+
+        // Wait, if it's local development, just print it to avoid errors if RESEND is missing
+        if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('dummy')) {
+            console.log(`\n==== MOCK EMAIL SENT ====\nTo: ${email}\nOTP Code: ${code}\n=========================\n`);
+        } else {
+            await resend.emails.send({
+                from: 'Smart Tourism <noreply@smarttourism.cloud>',
+                to: email,
+                subject: 'Smart Tourism - Registration Verification Code',
+                html: emailHtml
+            });
         }
 
-        // 5. Generate token
-        const token = jwt.sign(
-            { id: newUser.id, email: newUser.email, role: newUser.role },
-            process.env.JWT_SECRET || 'secret_key_for_development',
-            { expiresIn: '24h' }
-        );
-
-        res.status(201).json({
-            message: 'User registered successfully!',
-            user: {
-                id: newUser.id,
-                email: newUser.email,
-                role: newUser.role,
-                full_name: full_name || null,
-                profile_image_url: profile_image_url || null
-            },
-            token
+        return res.status(200).json({ 
+            message: 'Verification code sent to your email.',
+            requires_otp: true,
+            email 
         });
 
     } catch (error) {
         console.error('Registration Error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * RESEND OTP - Resends the 6 digit code
+ */
+const resendOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const pending = pendingRegistrations.get(email);
+        
+        if (!pending) {
+            return res.status(400).json({ error: 'No pending registration found for this email. Please register again.' });
+        }
+
+        const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+        pending.code = newCode;
+        pending.expires = Date.now() + 10 * 60 * 1000; // Reset to 10 mins
+
+        const emailHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
+                <tr>
+                    <td style="padding: 40px 40px 30px 40px; text-align: center;">
+                        <h1 style="color: #ffffff; font-size: 28px; margin: 0 0 10px 0; font-weight: 800; letter-spacing: -0.5px;">Your New Verification Code</h1>
+                        <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin: 0;">Use the new code below to complete your registration.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 40px 40px 40px;">
+                        <div style="background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 24px; text-align: center;">
+                            <span style="font-family: 'SF Mono', Consolas, Menlo, Monaco, monospace; font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #6366f1;">${newCode}</span>
+                        </div>
+                        <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 24px;">This code will expire in 10 minutes.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        `;
+
+        if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('dummy')) {
+            console.log(`\n==== MOCK EMAIL SENT (RESEND) ====\nTo: ${email}\nNew OTP Code: ${newCode}\n=========================\n`);
+        } else {
+            await resend.emails.send({
+                from: 'Smart Tourism <noreply@smarttourism.cloud>',
+                to: email,
+                subject: 'Smart Tourism - New Verification Code',
+                html: emailHtml
+            });
+        }
+
+        res.status(200).json({ message: 'New verification code sent successfully.' });
+    } catch (error) {
+        console.error('Resend OTP Error:', error);
+        res.status(500).json({ error: 'Internal server error while resending OTP.' });
     }
 };
 
@@ -315,4 +368,4 @@ const verifyLogin = async (req, res) => {
     }
 };
 
-module.exports = { register, verifyEmail, login, verifyLogin };
+module.exports = { register, verifyEmail, resendOtp, login, verifyLogin };
