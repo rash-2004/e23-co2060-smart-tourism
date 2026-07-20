@@ -1,7 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepo = require('../repositories/userRepo');
-const userRepo = require('../repositories/userRepo');
 
 /**
  * we use bycrypt because if a hacker steals our database, they will only see randomized hash strings, 
@@ -18,23 +17,25 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'Email is already registered' });
         }
 
+        // Hash the password securely
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+
         // 2. Register the user instantly
         let newUser;
         if (role === 'tourist') {
-            newUser = await userRepo.createUser(email, password, role);
+            newUser = await userRepo.createUser(email, passwordHash, role);
             if (newUser) {
-                await userRepo.createTouristProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
+                await userRepo.updateTouristProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
             }
         } else if (role === 'guide') {
-            newUser = await userRepo.createUser(email, password, role);
+            newUser = await userRepo.createUser(email, passwordHash, role);
             if (newUser) {
-                await userRepo.createGuideProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
+                // updateGuideProfile takes: userId, fullName, bio, licenseNumber, hourlyRate, contactNumber, profileImageUrl, specialization, experienceYears, languages, coveredLocations
+                await userRepo.updateGuideProfile(newUser.id, full_name, '', '', 0, contact_number || null, profile_image_url || null, '', 0, '', covered_locations || '');
             }
         } else if (role === 'admin') {
-            newUser = await userRepo.createUser(email, password, role);
-            if (newUser) {
-                await userRepo.createAdminProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
-            }
+            newUser = await userRepo.createUser(email, passwordHash, role);
         }
 
         // 3. Generate JWT token

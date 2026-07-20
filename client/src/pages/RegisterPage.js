@@ -657,7 +657,7 @@ const RegisterPage = () => {
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-              {loading ? 'Sending Code...' : 'Register'}
+              {loading ? 'Registering...' : 'Register'}
             </button>
           </form>
         )}
