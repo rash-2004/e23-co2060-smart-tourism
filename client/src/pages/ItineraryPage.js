@@ -15,8 +15,9 @@ import {
 } from 'react-icons/fa';
 import './ItineraryPage.css';
 
-// Mapbox Token (Set this in Vercel/Render environment variables)
-const MAPBOX_API_KEY = process.env.REACT_APP_MAPBOX_TOKEN || '';
+// OpenRouteService Token (Set this in Vercel/Render environment variables)
+// ORS does NOT require a credit card to sign up!
+const ORS_API_KEY = process.env.REACT_APP_ORS_TOKEN || '';
 
 // GraphHopper free demo key (Fallback)
 const GRAPHHOPPER_API_KEY = 'f8512521-29f8-40cc-ad0a-64bed3f3c40b';
@@ -24,31 +25,39 @@ const GRAPHHOPPER_API_KEY = 'f8512521-29f8-40cc-ad0a-64bed3f3c40b';
 const fetchRouteData = async (coordPairs, attempt = 1) => {
   if (coordPairs.length < 2) return null;
 
-  // 1. Try Mapbox First (High Accuracy)
-  if (MAPBOX_API_KEY) {
+  // 1. Try OpenRouteService First (High Accuracy, No Credit Card required)
+  if (ORS_API_KEY) {
     try {
-      // Mapbox expects: lon,lat;lon,lat
-      const coordinates = coordPairs.map(([lat, lng]) => `${lng},${lat}`).join(';');
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?geometries=geojson&access_token=${MAPBOX_API_KEY}`;
+      // ORS expects coordinates as [[lon, lat], [lon, lat]]
+      const coordinates = coordPairs.map(([lat, lng]) => [lng, lat]);
       
-      const res = await fetch(url);
+      const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+          'Content-Type': 'application/json',
+          'Authorization': ORS_API_KEY
+        },
+        body: JSON.stringify({ coordinates })
+      });
+      
       const data = await res.json();
       
-      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        // Mapbox GeoJSON coordinates are [lon, lat], Leaflet wants [lat, lon]
+      if (data.features && data.features.length > 0) {
+        const route = data.features[0];
+        // ORS GeoJSON coordinates are [lon, lat], Leaflet wants [lat, lon]
         const points = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
         
         return {
           points,
-          distanceKm: (route.distance / 1000).toFixed(1),
-          durationMin: Math.round(route.duration / 60),
-          provider: 'mapbox'
+          distanceKm: (route.properties.summary.distance / 1000).toFixed(1),
+          durationMin: Math.round(route.properties.summary.duration / 60),
+          provider: 'openrouteservice'
         };
       }
-      console.warn("Mapbox routing failed or returned no routes, falling back to GraphHopper...", data);
+      console.warn("ORS routing failed, falling back to GraphHopper...", data);
     } catch (err) {
-      console.error("Mapbox API Error:", err);
+      console.error("OpenRouteService API Error:", err);
     }
   }
 
