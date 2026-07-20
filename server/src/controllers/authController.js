@@ -9,16 +9,26 @@ const pendingRegistrations = new Map();
 // In-memory store for pending admin logins (email -> { userId, email, role, code, expires })
 const pendingLogins = new Map();
 
-// Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false,
+    secure: false, // use STARTTLS
     requireTLS: true,
-    family: 4, // Absolutely forces Node to use IPv4 socket for this connection
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    // The absolute ultimate override: force IPv4 strictly at the TCP socket layer
+    lookup: (hostname, options, callback) => {
+        require('dns').resolve4(hostname, (err, addresses) => {
+            if (err || !addresses || addresses.length === 0) {
+                return require('dns').lookup(hostname, options, callback);
+            }
+            callback(null, addresses[0], 4);
+        });
     }
 });
 
