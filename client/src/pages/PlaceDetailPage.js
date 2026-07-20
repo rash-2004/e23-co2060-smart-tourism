@@ -107,7 +107,13 @@ const PlaceDetailPage = () => {
                 <FaPlus /> Add to Itinerary
               </button>
               <button 
-                onClick={() => isAuthenticated() ? setShowReviewModal(true) : navigate('/login')}
+                onClick={() => {
+                  if (isAuthenticated()) {
+                    document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate('/login');
+                  }
+                }}
                 className="review-badge-btn"
                 style={{
                   padding: '6px 16px',
@@ -145,7 +151,7 @@ const PlaceDetailPage = () => {
           </div>
         </div>
 
-        <div className="place-detail-content">
+        <div className="place-detail-content" id="reviews-section">
           <ReviewSection targetId={id} type="place" />
         </div>
       </div>
