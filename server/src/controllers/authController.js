@@ -1,10 +1,16 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepo = require('../repositories/userRepo');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-// Initialize Resend with the API key from environment variables
-const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-local');
+// Initialize Nodemailer transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
 
 // In-memory store for pending registrations (email -> { userData, code, expires })
 const pendingRegistrations = new Map();
@@ -60,19 +66,19 @@ const register = async (req, res) => {
         </div>
         `;
 
-        // Wait, if it's local development, just print it to avoid errors if RESEND is missing
-        if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('dummy')) {
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.log(`\n==== MOCK EMAIL SENT ====\nTo: ${email}\nOTP Code: ${code}\n=========================\n`);
         } else {
-            const { data, error } = await resend.emails.send({
-                from: 'Smart Tourism <onboarding@resend.dev>',
-                to: email,
-                subject: 'Smart Tourism - Registration Verification Code',
-                html: emailHtml
-            });
-            if (error) {
-                console.error('Resend API Error:', error);
-                return res.status(500).json({ error: 'Failed to send verification email. ' + error.message });
+            try {
+                await transporter.sendMail({
+                    from: `"Smart Tourism" <${process.env.EMAIL_USER}>`,
+                    to: email,
+                    subject: 'Smart Tourism - Registration Verification Code',
+                    html: emailHtml
+                });
+            } catch (error) {
+                console.error('Nodemailer Error:', error);
+                return res.status(500).json({ error: 'Failed to send verification email. Please check your EMAIL_USER and EMAIL_PASS configuration.' });
             }
         }
 
@@ -125,18 +131,19 @@ const resendOtp = async (req, res) => {
         </div>
         `;
 
-        if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('dummy')) {
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.log(`\n==== MOCK EMAIL SENT (RESEND) ====\nTo: ${email}\nNew OTP Code: ${newCode}\n=========================\n`);
         } else {
-            const { data, error } = await resend.emails.send({
-                from: 'Smart Tourism <onboarding@resend.dev>',
-                to: email,
-                subject: 'Smart Tourism - New Verification Code',
-                html: emailHtml
-            });
-            if (error) {
-                console.error('Resend API Error (ResendOTP):', error);
-                return res.status(500).json({ error: 'Failed to resend verification email. ' + error.message });
+            try {
+                await transporter.sendMail({
+                    from: `"Smart Tourism" <${process.env.EMAIL_USER}>`,
+                    to: email,
+                    subject: 'Smart Tourism - New Verification Code',
+                    html: emailHtml
+                });
+            } catch (error) {
+                console.error('Nodemailer Error (ResendOTP):', error);
+                return res.status(500).json({ error: 'Failed to resend verification email. Please check your EMAIL_USER and EMAIL_PASS configuration.' });
             }
         }
 
