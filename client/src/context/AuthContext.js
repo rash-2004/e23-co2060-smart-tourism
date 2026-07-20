@@ -84,6 +84,15 @@ export const AuthProvider = ({ children }) => {
         ...additionalData
       });
       
+      if (response.data.token && response.data.user) {
+        const { user: userData, token: authToken } = response.data;
+        setUser(userData);
+        setToken(authToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', authToken);
+        API.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      }
+      
       return { success: true, message: response.data.message };
     } catch (error) {
       return { 

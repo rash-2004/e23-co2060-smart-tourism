@@ -126,9 +126,7 @@ const RegisterPage = () => {
     });
     
     if (result.success) {
-      // Show OTP form
-      setShowOtp(true);
-      setError('');
+      navigate('/');
     } else {
       setError(result.error);
     }

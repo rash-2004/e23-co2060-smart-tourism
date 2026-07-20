@@ -27,54 +27,57 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'Email is already registered' });
         }
 
-        // 2. Generate a 6-digit verification code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        // 2. Hash password
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
 
-        // 3. Store registration data temporarily (expires in 10 minutes)
-        pendingRegistrations.set(email, {
-            userData: req.body,
-            code,
-            expires: Date.now() + 10 * 60 * 1000 // 10 minutes
-        });
+        // 3. Create user
+        const newUser = await userRepo.createUser(email, passwordHash, role);
 
-        // 4. Send email using Resend API (HTTPS)
-        const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
-            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
-                <tr>
-                    <td style="padding: 40px 30px;">
-                        <h2 style="color: #a794ff; text-align: center; margin: 0 0 24px 0; font-size: 24px; font-weight: 600; line-height: 1.4;">
-                            Welcome to Smart Tourism,<br>${full_name || 'User'}!
-                        </h2>
-                        <p style="font-size: 16px; line-height: 1.5; color: #e5e7eb; margin: 0 0 30px 0;">
-                            Please use the following 6-digit verification code to complete your registration.
-                        </p>
-                        <div style="background-color: #121212; border: 1px solid #2a2a2a; border-radius: 8px; padding: 30px 20px; text-align: center; margin: 0 0 30px 0;">
-                            <span style="font-size: 42px; font-weight: bold; letter-spacing: 12px; color: #a794ff; display: inline-block; padding-left: 12px;">${code}</span>
-                        </div>
-                        <p style="text-align: center; font-size: 14px; color: #9ca3af; margin: 0;">
-                            This code will expire in 10 minutes.
-                        </p>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        `;
-
-        const { data, error } = await resend.emails.send({
-            from: 'Smart Tourism <onboarding@resend.dev>', // Free tier sandbox email
-            to: email, // Free tier requires this to be the verified email address
-            subject: 'Verify your Smart Tourism Account',
-            html: emailHtml
-        });
-
-        if (error) {
-            console.error("Resend API Error:", error);
-            return res.status(500).json({ error: 'Failed to send verification email via Resend' });
+        // 4. Create profile
+        if (full_name) {
+            if (role === 'guide') {
+                await userRepo.updateGuideProfile(
+                    newUser.id, 
+                    full_name, 
+                    null, // bio
+                    null, // license_number
+                    0, // hourly_rate
+                    contact_number || null,
+                    profile_image_url || null,
+                    null, // specialization
+                    0, // experience_years
+                    null, // languages
+                    covered_locations || null
+                );
+            } else {
+                await userRepo.updateTouristProfile(
+                    newUser.id, 
+                    full_name, 
+                    '', 
+                    contact_number || null,
+                    profile_image_url || null
+                );
+            }
         }
 
-        res.status(200).json({
-            message: 'Verification code sent to email. Please verify to complete registration.'
+        // 5. Generate token
+        const token = jwt.sign(
+            { id: newUser.id, email: newUser.email, role: newUser.role },
+            process.env.JWT_SECRET || 'secret_key_for_development',
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+            message: 'User registered successfully!',
+            user: {
+                id: newUser.id,
+                email: newUser.email,
+                role: newUser.role,
+                full_name: full_name || null,
+                profile_image_url: profile_image_url || null
+            },
+            token
         });
 
     } catch (error) {
