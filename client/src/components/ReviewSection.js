@@ -3,7 +3,7 @@ import { reviewService } from '../services';
 import './ReviewSection.css';
 import { FaStar } from 'react-icons/fa';
 
-const ReviewSection = ({ targetId, type }) => {
+const ReviewSection = ({ targetId, type, showFormModal, onCloseFormModal }) => {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
@@ -92,6 +92,7 @@ const ReviewSection = ({ targetId, type }) => {
             setTitle('');
             setComment('');
             fetchReviews();
+            if (onCloseFormModal) onCloseFormModal();
         } catch (err) {
             console.error('Failed to submit review:', err);
             setError(err.response?.data?.error || 'Failed to submit review. Please try again.');
@@ -117,53 +118,77 @@ const ReviewSection = ({ targetId, type }) => {
                 </div>
             </div>
 
-            {userRole === 'tourist' && (
-                <div className="review-form-card">
-                    <h4>Leave a Review</h4>
-                    {error && <div className="review-error">{error}</div>}
-                    <form onSubmit={handleSubmit}>
-                        <div className="star-rating-input">
-                            {[...Array(5)].map((star, index) => {
-                                index += 1;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={index}
-                                        className={index <= (hover || rating) ? "star-btn active" : "star-btn"}
-                                        onClick={() => setRating(index)}
-                                        onMouseEnter={() => setHover(index)}
-                                        onMouseLeave={() => setHover(rating)}
-                                    >
-                                        <FaStar />
-                                    </button>
-                                );
-                            })}
+            {userRole === 'tourist' && showFormModal && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000,
+                    backdropFilter: 'blur(10px)'
+                }}>
+                    <div className="modal-box review-modal review-form-card" style={{
+                        backgroundColor: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '24px',
+                        padding: '32px',
+                        width: '95%',
+                        maxWidth: '550px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h4 style={{ margin: 0 }}>Leave a Review</h4>
+                            <button onClick={onCloseFormModal} className="btn-close" style={{
+                                background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer'
+                            }}>✖</button>
                         </div>
-                        
-                        {type === 'place' && (
-                            <input 
-                                type="text" 
-                                placeholder="Review Title" 
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="review-input"
+                        {error && <div className="review-error">{error}</div>}
+                        <form onSubmit={handleSubmit}>
+                            <div className="star-rating-input">
+                                {[...Array(5)].map((star, index) => {
+                                    index += 1;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={index}
+                                            className={index <= (hover || rating) ? "star-btn active" : "star-btn"}
+                                            onClick={() => setRating(index)}
+                                            onMouseEnter={() => setHover(index)}
+                                            onMouseLeave={() => setHover(rating)}
+                                        >
+                                            <FaStar />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            
+                            {type === 'place' && (
+                                <input 
+                                    type="text" 
+                                    placeholder="Review Title" 
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="review-input"
+                                />
+                            )}
+                            
+                            <textarea 
+                                placeholder="Share your experience..." 
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                className="review-textarea"
+                                rows="3"
                             />
-                        )}
-                        
-                        <textarea 
-                            placeholder="Share your experience..." 
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            className="review-textarea"
-                            rows="3"
-                        />
-                        <div style={{ textAlign: 'right', fontSize: '0.8rem', color: comment.trim().split(/\s+/).filter(w => w.length > 0).length > 100 ? '#ff4d4f' : 'gray', marginTop: '-10px', marginBottom: '15px' }}>
-                            {comment.trim().split(/\s+/).filter(w => w.length > 0).length} / 100 words
-                        </div>
-                        <button type="submit" className="btn btn-primary review-submit-btn" disabled={submitting}>
-                            {submitting ? 'Submitting...' : 'Post Review'}
-                        </button>
-                    </form>
+                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: comment.trim().split(/\s+/).filter(w => w.length > 0).length > 100 ? '#ff4d4f' : 'gray', marginTop: '-10px', marginBottom: '15px' }}>
+                                {comment.trim().split(/\s+/).filter(w => w.length > 0).length} / 100 words
+                            </div>
+                            <button type="submit" className="btn btn-primary review-submit-btn" disabled={submitting}>
+                                {submitting ? 'Submitting...' : 'Post Review'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             )}
 

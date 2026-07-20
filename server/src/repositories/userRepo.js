@@ -178,10 +178,15 @@ const suggestGuidesForItinerary = async (itineraryId) => {
 
             if (guide.covered_locations) {
                 const coveredLocations = guide.covered_locations.toLowerCase().split(',').map(loc => loc.trim());
+                
+                const isIslandWide = coveredLocations.some(loc => loc.includes('island wide') || loc.includes('island-wide') || loc.includes('sri lanka'));
 
                 // Check for exact place name matches
                 placeNames.forEach(placeName => {
-                    if (coveredLocations.some(loc => loc.includes(placeName) || placeName.includes(loc))) {
+                    if (isIslandWide) {
+                        score += 10;
+                        matchedPlaces.push(placeName);
+                    } else if (coveredLocations.some(loc => loc.includes(placeName) || placeName.includes(loc))) {
                         score += 10; // High score for direct place match
                         matchedPlaces.push(placeName);
                     }

@@ -109,7 +109,7 @@ const PlaceDetailPage = () => {
               <button 
                 onClick={() => {
                   if (isAuthenticated()) {
-                    document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
+                    setShowReviewModal(true);
                   } else {
                     navigate('/login');
                   }
@@ -152,7 +152,12 @@ const PlaceDetailPage = () => {
         </div>
 
         <div className="place-detail-content" id="reviews-section">
-          <ReviewSection targetId={id} type="place" />
+          <ReviewSection 
+            targetId={id} 
+            type="place" 
+            showFormModal={showReviewModal}
+            onCloseFormModal={() => setShowReviewModal(false)}
+          />
         </div>
       </div>
 
