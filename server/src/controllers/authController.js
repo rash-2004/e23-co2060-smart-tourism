@@ -95,60 +95,7 @@ const login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // 4. Special flow for admin: Require OTP
-        if (user.role === 'admin') {
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            pendingLogins.set(email, {
-                userId: user.id,
-                email: user.email,
-                role: user.role,
-                code,
-                expires: Date.now() + 10 * 60 * 1000 // 10 mins
-            });
-
-            const emailHtml = `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
-                    <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="color: #a794ff; text-align: center; margin: 0 0 24px 0; font-size: 24px; font-weight: 600; line-height: 1.4;">
-                                Admin Verification Required
-                            </h2>
-                            <p style="font-size: 16px; line-height: 1.5; color: #e5e7eb; margin: 0 0 30px 0;">
-                                Please use the following 6-digit verification code to complete your login.
-                            </p>
-                            <div style="background-color: #121212; border: 1px solid #2a2a2a; border-radius: 8px; padding: 30px 20px; text-align: center; margin: 0 0 30px 0;">
-                                <span style="font-size: 42px; font-weight: bold; letter-spacing: 12px; color: #a794ff; display: inline-block; padding-left: 12px;">${code}</span>
-                            </div>
-                            <p style="text-align: center; font-size: 14px; color: #9ca3af; margin: 0;">
-                                This code will expire in 10 minutes.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-            `;
-
-            const { data, error } = await resend.emails.send({
-                from: 'Smart Tourism <onboarding@resend.dev>',
-                to: email,
-                subject: 'Admin Login Verification',
-                html: emailHtml
-            });
-
-            if (error) {
-                console.error("Resend API Error (Admin Login):", error);
-                return res.status(500).json({ error: 'Failed to send verification email via Resend' });
-            }
-
-            return res.status(200).json({
-                message: 'Verification code sent',
-                requires_otp: true,
-                email: user.email
-            });
-        }
-
-        // 5. Generate JWT token for normal users
+        // 4. Generate JWT token for all users including admin
         const token = jwt.sign(
             { 
                 userId: user.id, 
@@ -159,7 +106,7 @@ const login = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRY || '24h' }
         );
 
-        // 6. Return success with token
+        // 5. Return success with token
         res.status(200).json({
             message: 'Login successful!',
             token,
@@ -176,55 +123,4 @@ const login = async (req, res) => {
     }
 };
 
-/**
- * VERIFY LOGIN - Verify OTP for admin login
- */
-const verifyLogin = async (req, res) => {
-    try {
-        const { email, code } = req.body;
-        const pending = pendingLogins.get(email);
-
-        if (!pending) {
-            return res.status(400).json({ error: 'No pending login found for this email.' });
-        }
-
-        if (Date.now() > pending.expires) {
-            pendingLogins.delete(email);
-            return res.status(400).json({ error: 'Verification code has expired. Please login again.' });
-        }
-
-        if (pending.code !== code) {
-            return res.status(400).json({ error: 'Invalid verification code.' });
-        }
-
-        // Generate JWT token
-        const token = jwt.sign(
-            { 
-                userId: pending.userId, 
-                email: pending.email, 
-                role: pending.role 
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRY || '24h' }
-        );
-
-        // Remove pending login
-        pendingLogins.delete(email);
-
-        res.status(200).json({
-            message: 'Login successful!',
-            token,
-            user: {
-                id: pending.userId,
-                email: pending.email,
-                role: pending.role
-            }
-        });
-
-    } catch (error) {
-        console.error('Verify Login Error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-module.exports = { register, login, verifyLogin };
+module.exports = { register, login };

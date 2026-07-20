@@ -51,10 +51,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const response = await API.post('/api/auth/login', { email, password });
       
-      if (response.data.requires_otp) {
-        return { success: true, requires_otp: true, email: response.data.email };
-      }
-
       const { user: userData, token: authToken } = response.data;
       
       setUser(userData);
@@ -63,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', authToken);
       API.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
       
-      return { success: true };
+      return { success: true, user: userData };
     } catch (error) {
       return { 
         success: false, 
@@ -104,28 +100,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyAdminLogin = async (email, code) => {
-    try {
-      setLoading(true);
-      const response = await API.post('/api/auth/verify-login', { email, code });
-      const { user: userData, token: authToken } = response.data;
-      
-      setUser(userData);
-      setToken(authToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', authToken);
-      API.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-      
-      return { success: true, user: userData };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Verification failed' 
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const logout = () => {
     setUser(null);
@@ -147,7 +121,6 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    verifyAdminLogin,
     logout,
     isAuthenticated,
     unreadNotificationCount,

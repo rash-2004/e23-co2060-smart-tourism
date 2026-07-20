@@ -8,10 +8,8 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [otp, setOtp] = useState('');
-  const { login, verifyAdminLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,26 +25,6 @@ const LoginPage = () => {
     
     const result = await login(formData.email, formData.password);
     
-    if (result.success) {
-      if (result.requires_otp) {
-        setShowOtp(true);
-      } else {
-        navigate('/dashboard');
-      }
-    } else {
-      setError(result.error);
-    }
-    
-    setLoading(false);
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const result = await verifyAdminLogin(formData.email, otp);
-
     if (result.success) {
       if (result.user.role === 'admin') {
         navigate('/admin-dashboard');
@@ -80,48 +58,6 @@ const LoginPage = () => {
           
           {error && <div className="error">{error}</div>}
         
-        {showOtp ? (
-          <form onSubmit={handleVerifyOtp} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="otp" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-head)', fontWeight: '600' }}>
-                Admin Verification Code
-              </label>
-              <input
-                type="text"
-                id="otp"
-                name="otp"
-                value={otp}
-                onChange={(e) => { setOtp(e.target.value); setError(''); }}
-                placeholder="Enter 6-digit code"
-                required
-                maxLength="6"
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '4px' }}
-                className="auth-input"
-              />
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
-                We've sent a 6-digit code to {formData.email}
-              </p>
-            </div>
-            
-            <button type="submit" className="btn btn-primary btn-block" disabled={loading || otp.length !== 6}>
-              {loading ? 'Verifying...' : 'Verify & Login'}
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary btn-block" 
-              style={{ marginTop: '10px' }}
-              onClick={() => {
-                setShowOtp(false);
-                setOtp('');
-                setError('');
-              }}
-              disabled={loading}
-            >
-              Back to Login
-            </button>
-          </form>
         ) : (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
@@ -166,8 +102,6 @@ const LoginPage = () => {
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-        )}
-
         <div className="auth-footer" style={{ textAlign: 'center', marginTop: '20px', color: 'var(--text-muted)' }}>
           <p>Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}>Register here</Link></p>
         </div>
