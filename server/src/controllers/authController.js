@@ -13,7 +13,9 @@ const pendingLogins = new Map();
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // use STARTTLS
+    secure: false,
+    requireTLS: true,
+    family: 4, // Absolutely forces Node to use IPv4 socket for this connection
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
