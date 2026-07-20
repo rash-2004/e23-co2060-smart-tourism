@@ -126,9 +126,9 @@ const RegisterPage = () => {
     });
     
     if (result.success) {
-      // Show OTP form instead of logging in automatically
-      setShowOtp(true);
-      setError('');
+      // Auto-login since OTP verification is disabled
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
     } else {
       setError(result.error);
     }

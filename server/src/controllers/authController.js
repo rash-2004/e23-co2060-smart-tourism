@@ -1,36 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepo = require('../repositories/userRepo');
-const nodemailer = require('nodemailer');
-
-// In-memory store for pending registrations (email -> { userData, code, expires })
-const pendingRegistrations = new Map();
-
-// In-memory store for pending admin logins (email -> { userId, email, role, code, expires })
-const pendingLogins = new Map();
-
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // use STARTTLS
-    requireTLS: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    // The absolute ultimate override: force IPv4 strictly at the TCP socket layer
-    lookup: (hostname, options, callback) => {
-        require('dns').resolve4(hostname, (err, addresses) => {
-            if (err || !addresses || addresses.length === 0) {
-                return require('dns').lookup(hostname, options, callback);
-            }
-            callback(null, addresses[0], 4);
-        });
-    }
-});
+const userRepo = require('../repositories/userRepo');
 
 /**
  * we use bycrypt because if a hacker steals our database, they will only see randomized hash strings, 
@@ -47,49 +18,40 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'Email is already registered' });
         }
 
-        // 2. Generate a 6-digit verification code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        // 2. Register the user instantly
+        let newUser;
+        if (role === 'tourist') {
+            newUser = await userRepo.createUser(email, password, role);
+            if (newUser) {
+                await userRepo.createTouristProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
+            }
+        } else if (role === 'guide') {
+            newUser = await userRepo.createUser(email, password, role);
+            if (newUser) {
+                await userRepo.createGuideProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
+            }
+        } else if (role === 'admin') {
+            newUser = await userRepo.createUser(email, password, role);
+            if (newUser) {
+                await userRepo.createAdminProfile(newUser.id, full_name, '', contact_number || null, profile_image_url || null);
+            }
+        }
 
-        // 3. Store registration data temporarily (expires in 10 minutes)
-        pendingRegistrations.set(email, {
-            userData: req.body,
-            code,
-            expires: Date.now() + 10 * 60 * 1000 // 10 minutes
-        });
+        // 3. Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: newUser.id, 
+                email: newUser.email, 
+                role: newUser.role 
+            },
+            process.env.JWT_SECRET || 'your_jwt_secret',
+            { expiresIn: '24h' }
+        );
 
-        // 4. Send email using the professional dark theme format (no emojis)
-        const mailOptions = {
-            from: `"Smart Tourism" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject: 'Verify your Smart Tourism Account',
-            html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
-                    <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="color: #a794ff; text-align: center; margin: 0 0 24px 0; font-size: 24px; font-weight: 600; line-height: 1.4;">
-                                Welcome to Smart Tourism,<br>${full_name || 'User'}!
-                            </h2>
-                            <p style="font-size: 16px; line-height: 1.5; color: #e5e7eb; margin: 0 0 30px 0;">
-                                Please use the following 6-digit verification code to complete your registration.
-                            </p>
-                            <div style="background-color: #121212; border: 1px solid #2a2a2a; border-radius: 8px; padding: 30px 20px; text-align: center; margin: 0 0 30px 0;">
-                                <span style="font-size: 42px; font-weight: bold; letter-spacing: 12px; color: #a794ff; display: inline-block; padding-left: 12px;">${code}</span>
-                            </div>
-                            <p style="text-align: center; font-size: 14px; color: #9ca3af; margin: 0;">
-                                This code will expire in 10 minutes.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-            `
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        res.status(200).json({
-            message: 'Verification code sent to email. Please verify to complete registration.'
+        res.status(201).json({
+            message: 'Registration successful',
+            user: newUser,
+            token
         });
 
     } catch (error) {
@@ -195,53 +157,7 @@ const login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // 4. Special flow for admin: Require OTP
-        if (user.role === 'admin') {
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            pendingLogins.set(email, {
-                userId: user.id,
-                email: user.email,
-                role: user.role,
-                code,
-                expires: Date.now() + 10 * 60 * 1000 // 10 mins
-            });
-
-            const mailOptions = {
-                from: `"Smart Tourism" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: 'Admin Login Verification',
-                html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f14; color: #e5e7eb; padding: 40px 20px; margin: 0; width: 100%;">
-                    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; background-color: #161616; border-radius: 12px; margin: 0 auto;">
-                        <tr>
-                            <td style="padding: 40px 30px;">
-                                <h2 style="color: #a794ff; text-align: center; margin: 0 0 24px 0; font-size: 24px; font-weight: 600; line-height: 1.4;">
-                                    Admin Verification Required
-                                </h2>
-                                <p style="font-size: 16px; line-height: 1.5; color: #e5e7eb; margin: 0 0 30px 0;">
-                                    Please use the following 6-digit verification code to complete your login.
-                                </p>
-                                <div style="background-color: #121212; border: 1px solid #2a2a2a; border-radius: 8px; padding: 30px 20px; text-align: center; margin: 0 0 30px 0;">
-                                    <span style="font-size: 42px; font-weight: bold; letter-spacing: 12px; color: #a794ff; display: inline-block; padding-left: 12px;">${code}</span>
-                                </div>
-                                <p style="text-align: center; font-size: 14px; color: #9ca3af; margin: 0;">
-                                    This code will expire in 10 minutes.
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                `
-            };
-
-            await transporter.sendMail(mailOptions);
-
-            return res.status(200).json({
-                message: 'Verification code sent',
-                requires_otp: true,
-                email: user.email
-            });
-        }
+        // No special flow for admin required since OTP is removed
 
         // 5. Generate JWT token for normal users
         const token = jwt.sign(
