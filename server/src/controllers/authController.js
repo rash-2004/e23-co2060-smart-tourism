@@ -96,13 +96,14 @@ const login = async (req, res) => {
         }
 
         // 4. Generate JWT token for all users including admin
+        const secretKey = process.env.JWT_SECRET || 'fallback_secret_key_for_development';
         const token = jwt.sign(
             { 
                 userId: user.id, 
                 email: user.email, 
                 role: user.role 
             },
-            process.env.JWT_SECRET,
+            secretKey,
             { expiresIn: process.env.JWT_EXPIRY || '24h' }
         );
 
