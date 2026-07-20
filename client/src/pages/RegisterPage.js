@@ -126,9 +126,9 @@ const RegisterPage = () => {
     });
     
     if (result.success) {
-      // Auto-login since OTP verification is disabled
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      // Show OTP form
+      setShowOtp(true);
+      setError('');
     } else {
       setError(result.error);
     }
@@ -657,7 +657,7 @@ const RegisterPage = () => {
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-              {loading ? 'Registering...' : 'Register'}
+              {loading ? 'Sending Code...' : 'Register'}
             </button>
           </form>
         )}
