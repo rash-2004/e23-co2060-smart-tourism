@@ -15,11 +15,44 @@ import {
 } from 'react-icons/fa';
 import './ItineraryPage.css';
 
-// GraphHopper free demo key — replace with your own from graphhopper.com
+// Mapbox Token (Set this in Vercel/Render environment variables)
+const MAPBOX_API_KEY = process.env.REACT_APP_MAPBOX_TOKEN || '';
+
+// GraphHopper free demo key (Fallback)
 const GRAPHHOPPER_API_KEY = 'f8512521-29f8-40cc-ad0a-64bed3f3c40b';
 
-const fetchGraphHopperRoute = async (coordPairs, attempt = 1) => {
+const fetchRouteData = async (coordPairs, attempt = 1) => {
   if (coordPairs.length < 2) return null;
+
+  // 1. Try Mapbox First (High Accuracy)
+  if (MAPBOX_API_KEY) {
+    try {
+      // Mapbox expects: lon,lat;lon,lat
+      const coordinates = coordPairs.map(([lat, lng]) => `${lng},${lat}`).join(';');
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?geometries=geojson&access_token=${MAPBOX_API_KEY}`;
+      
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        // Mapbox GeoJSON coordinates are [lon, lat], Leaflet wants [lat, lon]
+        const points = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+        
+        return {
+          points,
+          distanceKm: (route.distance / 1000).toFixed(1),
+          durationMin: Math.round(route.duration / 60),
+          provider: 'mapbox'
+        };
+      }
+      console.warn("Mapbox routing failed or returned no routes, falling back to GraphHopper...", data);
+    } catch (err) {
+      console.error("Mapbox API Error:", err);
+    }
+  }
+
+  // 2. Fallback to GraphHopper
   const pointsParam = coordPairs
     .map(([lat, lng]) => `point=${lat},${lng}`)
     .join('&');
@@ -30,16 +63,13 @@ const fetchGraphHopperRoute = async (coordPairs, attempt = 1) => {
     const data = await res.json();
     
     if (!res.ok) {
-      // Professional Hack: If a point is unreachable by car (off-road), the API returns "Cannot find point X".
-      // We catch this, remove that specific point from the routing request, and try again.
-      // This ensures 90% of the route still looks professional even if one point is messy.
       const match = data.message?.match(/Cannot find point (\d+)/);
       if (match && attempt < 3 && coordPairs.length > 2) {
         const pointIdx = parseInt(match[1]);
         console.warn(`Routing: Point ${pointIdx} is off-road. Retrying without it...`);
         const reducedCoords = [...coordPairs];
         reducedCoords.splice(pointIdx, 1);
-        return fetchGraphHopperRoute(reducedCoords, attempt + 1);
+        return fetchRouteData(reducedCoords, attempt + 1);
       }
       throw new Error(`GraphHopper request failed (${res.status}): ${data.message || 'unknown error'}`);
     }
@@ -62,6 +92,7 @@ const fetchGraphHopperRoute = async (coordPairs, attempt = 1) => {
       points,
       distanceKm: (path.distance / 1000).toFixed(1),
       durationMin: Math.round(path.time / 60000),
+      provider: 'graphhopper'
     };
   } catch (err) {
     throw err;
@@ -474,7 +505,7 @@ const ItineraryPage = () => {
 
     setGhLoading(true);
     setGhError('');
-    fetchGraphHopperRoute(cleanCoords)
+    fetchRouteData(cleanCoords)
       .then(route => { setGhRoute(route); })
       .catch(err => {
         console.error('GraphHopper error:', err);
