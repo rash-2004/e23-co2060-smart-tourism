@@ -64,12 +64,16 @@ const register = async (req, res) => {
         if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('dummy')) {
             console.log(`\n==== MOCK EMAIL SENT ====\nTo: ${email}\nOTP Code: ${code}\n=========================\n`);
         } else {
-            await resend.emails.send({
-                from: 'Smart Tourism <noreply@smarttourism.cloud>',
+            const { data, error } = await resend.emails.send({
+                from: 'Smart Tourism <onboarding@resend.dev>',
                 to: email,
                 subject: 'Smart Tourism - Registration Verification Code',
                 html: emailHtml
             });
+            if (error) {
+                console.error('Resend API Error:', error);
+                return res.status(500).json({ error: 'Failed to send verification email. ' + error.message });
+            }
         }
 
         return res.status(200).json({ 
@@ -124,12 +128,16 @@ const resendOtp = async (req, res) => {
         if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('dummy')) {
             console.log(`\n==== MOCK EMAIL SENT (RESEND) ====\nTo: ${email}\nNew OTP Code: ${newCode}\n=========================\n`);
         } else {
-            await resend.emails.send({
-                from: 'Smart Tourism <noreply@smarttourism.cloud>',
+            const { data, error } = await resend.emails.send({
+                from: 'Smart Tourism <onboarding@resend.dev>',
                 to: email,
                 subject: 'Smart Tourism - New Verification Code',
                 html: emailHtml
             });
+            if (error) {
+                console.error('Resend API Error (ResendOTP):', error);
+                return res.status(500).json({ error: 'Failed to resend verification email. ' + error.message });
+            }
         }
 
         res.status(200).json({ message: 'New verification code sent successfully.' });
